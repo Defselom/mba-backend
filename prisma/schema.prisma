@@ -14,18 +14,310 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id          String   @id @default(cuid())
-  email       String   @unique
-  username    String   @unique
-  password    String
-  firstName   String
-  lastName    String
-  birthDay    String?
-  phoneNumber String?
-  profilImage String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+// ---------- ENUMS ----------
+enum UserRole {
+  ADMIN
+  SPEAKER
+  MODERATOR
+  COLLABORATOR
+  PARTICIPANT
+  PARTNER
+}
 
-  @@map("users")
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING_VALIDATION
+}
+
+enum WebinarStatus {
+  SCHEDULED
+  ONGOING
+  COMPLETED
+  CANCELED
+}
+
+enum ApplicationType {
+  SPEAKER
+  MODERATOR
+  COLLABORATOR
+  PARTNER
+  PARTICIPANT
+}
+
+enum ApplicationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum DocumentType {
+  LAW
+  DECREE
+  UNIFORM_ACT
+  CONVENTION
+  COURT_DECISION
+  OTHER
+}
+
+enum PersonalizedSupportType {
+  LEGAL
+  SCIENTIFIC
+  ENTREPRENEURIAL
+  OTHER
+}
+
+enum SupportType {
+  PRESENTATION
+  REFERENCE_DOCUMENT
+  VIDEO
+  OTHER
+}
+
+enum ModerationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum RegistrationStatus {
+  CONFIRMED
+  CANCELED
+}
+
+// ---------- USER & PROFILES ----------
+model UserAccount {
+  id            String        @id @default(cuid())
+  username      String        @unique @db.VarChar(50)
+  password      String?       @db.VarChar(255)
+  email         String        @unique @db.VarChar(150)
+  role          UserRole
+  status        UserStatus    @default(ACTIVE)
+  firstName     String        @db.VarChar(100)
+  lastName      String?       @db.VarChar(100)
+  birthDate     DateTime?     @db.Date
+  phone         String?       @db.VarChar(20)
+  profileImage  String?       @db.VarChar(255)
+  isActive      Boolean       @default(true)
+  lastLogin     DateTime?     @db.Timestamptz(6)
+  createdAt     DateTime      @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime      @default(now()) @updatedAt @db.Timestamptz(6)
+
+  // Profiles
+  adminProfile        AdminProfile?
+  speakerProfile      SpeakerProfile?
+  moderatorProfile    ModeratorProfile?
+  collaboratorProfile CollaboratorProfile?
+  participantProfile  ParticipantProfile?
+  partnerProfile      PartnerProfile?
+
+  // Relations
+  applications        Application[]
+  testimonials        Testimonial[]
+  personalizedSupports PersonalizedSupport[]
+  registrations       Registration[]
+  downloadedDocuments Document[]        @relation("UserDownloads")
+  uploadedSupports    Support[]
+  animatedWebinars    Webinar[]         @relation("AnimatedWebinars")
+  moderatedWebinars   Webinar[]         @relation("ModeratedWebinars")
+  collaboratedWebinars Webinar[]        @relation("CollaboratorWebinars")
+  partnerApplications Application[]     @relation("PartnerApplications")
+}
+
+model AdminProfile {
+  id            String      @id @default(cuid())
+  userId        String      @unique
+  adminRights   String?     // List, JSON, or String[]
+  createdAt     DateTime    @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime    @default(now()) @updatedAt @db.Timestamptz(6)
+
+  user          UserAccount @relation(fields: [userId], references: [id])
+}
+
+model SpeakerProfile {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  academicLevel String?
+  currentPosition String?
+  motivation    String?
+  legalDomains  String? // JSON or String[]
+  professionalPhoto String?
+  biography     String?
+  scheduleConstraints String?
+  animationExperience String?
+  createdAt     DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  user          UserAccount @relation(fields: [userId], references: [id])
+}
+
+model ModeratorProfile {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  currentJob    String?
+  academicLevel String?
+  moderationExperience String?
+  coordinationAvailability String?
+  professionalPhoto String?
+  biography     String?
+  comfortDomains String? // JSON or String[]
+  createdAt     DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  user          UserAccount @relation(fields: [userId], references: [id])
+}
+
+model CollaboratorProfile {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  academicLevel String?
+  currentStatus String?
+  collaborationType String?
+  motivations   String?
+  otherCommitments String?
+  createdAt     DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  user          UserAccount @relation(fields: [userId], references: [id])
+}
+
+model ParticipantProfile {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  academicLevel String?
+  discoveryChannel String?
+  participationMotivation String?
+  otherPlatforms String?
+  wishedLegalThemes String? // JSON or String[]
+  createdAt     DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  user          UserAccount @relation(fields: [userId], references: [id])
+}
+
+model PartnerProfile {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  structureName String?
+  occupiedPosition String?
+  partnershipType String?
+  providedExpertise String?
+  collaborationExperience String?
+  createdAt     DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  user          UserAccount @relation(fields: [userId], references: [id])
+}
+
+/* // ---------- VISITOR ----------
+model Visitor {
+  id             String    @id @default(cuid())
+  sessionId      String
+  visitDate      DateTime
+  consultedPages String?   // List as JSON if needed
+} */
+
+// ---------- WEBINAR ----------
+model Webinar {
+  id                String         @id @default(cuid())
+  title             String
+  description       String
+  dateTime          DateTime
+  duration          Int
+  legalTopic        String
+  maxCapacity       Int
+  status            WebinarStatus
+  accessLink        String?
+  createdAt         DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime       @default(now()) @updatedAt @db.Timestamptz(6)
+
+  // Relations
+  supports          Support[]
+  registrations     Registration[]
+  testimonials      Testimonial[]
+  animatedById      String?
+  animatedBy        UserAccount?   @relation("AnimatedWebinars", fields: [animatedById], references: [id])
+  moderatedById     String?
+  moderatedBy       UserAccount?   @relation("ModeratedWebinars", fields: [moderatedById], references: [id])
+  collaborators     UserAccount[]  @relation("CollaboratorWebinars")
+}
+
+// ---------- DOCUMENT ----------
+model Document {
+  id               String       @id @default(cuid())
+  title            String
+  type             DocumentType
+  file             String
+  publicationDate  DateTime
+  legalDomain      String
+  description      String?
+  sizeBytes        Int
+  createdAt        DateTime     @default(now()) @db.Timestamptz(6)
+  updatedAt        DateTime     @default(now()) @updatedAt @db.Timestamptz(6)
+
+  // Relations
+  downloadedBy     UserAccount[] @relation("UserDownloads")
+}
+
+// ---------- TESTIMONIAL ----------
+model Testimonial {
+  id             String         @id @default(cuid())
+  content        String
+  createdAt      DateTime       @default(now()) @db.Timestamptz(6)
+  status         ModerationStatus
+  rating         Int?
+  userId         String
+  user           UserAccount    @relation(fields: [userId], references: [id])
+  webinarId      String?
+  webinar        Webinar?       @relation(fields: [webinarId], references: [id])
+}
+
+// ---------- APPLICATION (Candidature) ----------
+model Application {
+  id             String           @id @default(cuid())
+  type           ApplicationType
+  status         ApplicationStatus
+  createdAt      DateTime         @default(now()) @db.Timestamptz(6)
+  formData       String?
+  adminComment   String?
+  userId         String
+  user           UserAccount      @relation(fields: [userId], references: [id])
+  partnerId      String?
+  partner        UserAccount?     @relation("PartnerApplications", fields: [partnerId], references: [id])
+}
+
+// ---------- PERSONALIZED SUPPORT ----------
+model PersonalizedSupport {
+  id                   String           @id @default(cuid())
+  type                 PersonalizedSupportType
+  legalDomains         String? // JSON if you want a list
+  frequency            String?
+  scheduleConstraints  String?
+  communicationStyle   String?
+  status               ModerationStatus
+  estimatedCost        Float?
+  createdAt            DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt            DateTime         @default(now()) @updatedAt @db.Timestamptz(6)
+  userId               String
+  user                 UserAccount      @relation(fields: [userId], references: [id])
+}
+
+// ---------- REGISTRATION ----------
+model Registration {
+  id                  String         @id @default(cuid())
+  registrationDate    DateTime       @default(now()) @db.Timestamptz(6)
+  status              RegistrationStatus
+  userId              String
+  user                UserAccount    @relation(fields: [userId], references: [id])
+  webinarId           String
+  webinar             Webinar        @relation(fields: [webinarId], references: [id])
+}
+
+// ---------- SUPPORT (Document upload) ----------
+model Support {
+  id              String         @id @default(cuid())
+  title           String
+  file            String
+  type            SupportType
+  uploadDate      DateTime       @default(now()) @db.Timestamptz(6)
+  webinarId       String?
+  webinar         Webinar?       @relation(fields: [webinarId], references: [id])
+  uploadedById    String?
+  uploadedBy      UserAccount?   @relation(fields: [uploadedById], references: [id])
 }
