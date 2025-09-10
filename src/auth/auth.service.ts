@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  HttpStatus,
   Injectable,
   NotFoundException,
   UnauthorizedException,
@@ -115,7 +116,12 @@ export class AuthService {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password: _, ...result } = user;
 
-    return ResponseUtil.success(result, 'User registered successfully');
+    return ResponseUtil.success(
+      result,
+      'User registered successfully',
+      undefined,
+      HttpStatus.CREATED,
+    );
   }
 
   async login(dto: LoginDto, meta: MetaData): Promise<ApiResponse<authResponse>> {
@@ -161,6 +167,8 @@ export class AuthService {
         refresh_token,
       },
       'Login successful',
+      undefined,
+      HttpStatus.OK,
     );
   }
 
@@ -236,6 +244,8 @@ export class AuthService {
           refresh_token,
         },
         'Token refreshed successfully',
+        undefined,
+        HttpStatus.OK,
       );
     } catch (error: unknown) {
       // Gestion spécifique pour les tokens expirés
