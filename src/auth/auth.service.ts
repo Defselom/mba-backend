@@ -116,7 +116,7 @@ export class AuthService {
     return result;
   }
 
-  async login(dto: LoginDto) {
+  async login(dto: LoginDto, meta: MetaData) {
     // check if user exists
     const user = await this.prisma.userAccount.findFirst({
       where: {
@@ -142,6 +142,15 @@ export class AuthService {
     };
 
     const { access_token, refresh_token } = await this.generateTokens(payload);
+
+    await this.prisma.session.create({
+      data: {
+        ...meta,
+        token: refresh_token,
+        userId: user.id,
+        expiresAt: new Date(Date.now() + TokenExpiration.REFRESH_TOKEN),
+      },
+    });
 
     return {
       user: payload,
