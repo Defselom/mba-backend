@@ -2,30 +2,35 @@ version: '3.8'
 
 services:
   prod-db:
-    image: postgres:15
-    container_name: school-university-prod-db
+    image: postgres:15-alpine
+    container_name: ${APP_NAME:-school-project}-prod-db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: my_database
-      POSTGRES_USER: my_user
-      POSTGRES_PASSWORD: my_password
+      POSTGRES_DB: ${DB_NAME:-appdb}
+      POSTGRES_USER: ${DB_USER:-appuser}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-apppass}
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
     ports:
-      - '5452:5432'
+      - '${PROD_DB_PORT:-5432}:5432'
     volumes:
       - prod_pg_data:/var/lib/postgresql/data
     networks:
       - db-network
 
   test-db:
-    image: postgres:15
-    container_name: school-university-test-db
+    image: postgres:15-alpine
+    container_name: mba-test-db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: test_database
-      POSTGRES_USER: test_user
-      POSTGRES_PASSWORD: test_password
+      POSTGRES_DB: ${TEST_DB_NAME:-testdb}
+      POSTGRES_USER: ${TEST_DB_USER:-testuser}
+      POSTGRES_PASSWORD: ${TEST_DB_PASSWORD:-testpass}
     ports:
-      - '5453:5432'
+      - '${TEST_DB_PORT:-55432}:5432'
     volumes:
       - test_pg_data:/var/lib/postgresql/data
     networks:
