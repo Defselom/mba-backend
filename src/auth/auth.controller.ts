@@ -14,8 +14,11 @@ import { ConfigService } from '@nestjs/config';
 
 import type { Response, Request } from 'express';
 
+import { UAParser } from 'ua-parser-js';
+
 import { AuthService } from '@/auth/auth.service';
 import { LoginDto, RegisterDto } from '@/auth/dto';
+import { MetaData } from '@/auth/interface';
 import { clearAuthCookies, setAuthCookies } from '@/auth/utils';
 
 @Controller('auth')
@@ -74,7 +77,16 @@ export class AuthController {
       throw new UnauthorizedException('Refresh token not found');
     }
 
-    const result = await this.authService.refreshTokens(refreshToken);
+    const meta: MetaData = {
+      ipAddress:
+        (req.headers['x-forwarded-for'] as string)?.split(',')[0] ||
+        req.socket.remoteAddress ||
+        'unknown',
+      userAgent: req.headers['user-agent'] || 'unknown',
+      deviceType: new UAParser(req.headers['user-agent']).getDevice().type || 'desktop',
+    };
+
+    const result = await this.authService.refreshTokens(refreshToken, meta);
 
     // Pass only the tokens and a boolean for production mode
     const isProduction = this.config.get('NODE_ENV') === 'production';

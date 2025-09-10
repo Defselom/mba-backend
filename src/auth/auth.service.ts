@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -11,8 +12,10 @@ import { JsonWebTokenError, JwtService, NotBeforeError, TokenExpiredError } from
 import { TokenExpiration } from '@/auth/constants';
 import { JwtPayload, LoginDto } from '@/auth/dto';
 import { RegisterDto } from '@/auth/dto/register.dto';
+import { MetaData } from '@/auth/interface';
 import { hashPassword, verifyPassword } from '@/auth/utils/handlePassword';
 import { PrismaService } from '@/prisma/prisma.service';
+import { UserRole } from 'generated/prisma';
 
 @Injectable()
 export class AuthService {
@@ -42,8 +45,8 @@ export class AuthService {
   }
 
   async register(dto: RegisterDto) {
-    // check if user exists
-    const userExists = await this.prisma.user.findFirst({
+    // 1. Check if user exists
+    const userExists = await this.prisma.userAccount.findFirst({
       where: {
         OR: [{ email: dto.email }, { username: dto.username }],
       },
@@ -53,21 +56,59 @@ export class AuthService {
       throw new ConflictException('User already exists');
     }
 
-    const hashedPassword = await hashPassword(dto.password);
+    // 2. Hash password
+    const hashedPassword = dto.password ? await hashPassword(dto.password) : undefined;
 
-    // Create user
-    const user = await this.prisma.user.create({
+    // 3. Create UserAccount
+    const user = await this.prisma.userAccount.create({
       data: {
         email: dto.email,
         username: dto.username,
         password: hashedPassword,
+        role: dto.role,
+        status: 'ACTIVE', // ou 'PENDING_VALIDATION'
         firstName: dto.firstName,
         lastName: dto.lastName,
-        birthDay: dto.birthDay,
-        phoneNumber: dto.phoneNumber,
-        profilImage: dto.profilImage,
+        birthDate: dto.birthDate ? new Date(dto.birthDate) : undefined,
+        phone: dto.phone,
+        profileImage: dto.profileImage,
       },
     });
+
+    // 4. Create role-specific profile
+    switch (dto.role) {
+      case UserRole.PARTICIPANT:
+        if (!dto.participantProfile)
+          throw new BadRequestException('Participant profile is required');
+        await this.prisma.participantProfile.create({
+          data: {
+            userId: user.id,
+            ...dto.participantProfile,
+          },
+        });
+        break;
+      case UserRole.SPEAKER:
+        if (!dto.speakerProfile) throw new BadRequestException('Speaker profile is required');
+        await this.prisma.speakerProfile.create({
+          data: {
+            userId: user.id,
+            ...dto.speakerProfile,
+          },
+        });
+        break;
+      case UserRole.MODERATOR:
+        if (!dto.moderatorProfile) throw new BadRequestException('Moderator profile is required');
+        await this.prisma.moderatorProfile.create({
+          data: {
+            userId: user.id,
+            ...dto.moderatorProfile,
+          },
+        });
+        break;
+
+      default:
+        break;
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password: _, ...result } = user;
@@ -77,7 +118,7 @@ export class AuthService {
 
   async login(dto: LoginDto) {
     // check if user exists
-    const user = await this.prisma.user.findFirst({
+    const user = await this.prisma.userAccount.findFirst({
       where: {
         OR: [{ email: dto.email }, { username: dto.username }],
       },
@@ -88,7 +129,7 @@ export class AuthService {
     }
 
     // check password
-    const isPasswordValid = await verifyPassword(dto.password, user.password);
+    const isPasswordValid = await verifyPassword(dto.password, user.password ?? '#$@!invalid');
 
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials provided');
@@ -114,15 +155,34 @@ export class AuthService {
     return { message: 'Logout successful' };
   }
 
-  async refreshTokens(refreshToken: string) {
+  async refreshTokens(refreshToken: string, meta: MetaData) {
     try {
+      const existingSession = await this.prisma.session.findUnique({
+        where: { token: refreshToken },
+      });
+
+      if (!existingSession) {
+        throw new UnauthorizedException('Refresh token not recognized. Please log in again.');
+      }
+
+      if (existingSession.expiresAt < new Date()) {
+        await this.prisma.session.delete({
+          where: { id: existingSession.id },
+        });
+        throw new UnauthorizedException('Refresh token has expired. Please log in again.');
+      }
+
+      if (!existingSession.isActive) {
+        throw new UnauthorizedException('Refresh token is no longer active. Please log in again.');
+      }
+
       const payload: JwtPayload = await this.jwtService.verifyAsync(refreshToken, {
         secret: this.config.get<string>('JWT_REFRESH_SECRET', 'fallback-secret-refresh'),
       });
 
       //console.log(payload);
 
-      const user = await this.prisma.user.findUnique({
+      const user = await this.prisma.userAccount.findUnique({
         where: { id: payload.sub },
       });
 
@@ -134,9 +194,26 @@ export class AuthService {
         sub: user.id,
         username: user.username,
         email: user.email,
+        role: user.role,
       };
 
       const { access_token, refresh_token } = await this.generateTokens(newPayload);
+
+      await Promise.all([
+        this.prisma.session.delete({
+          where: { id: existingSession.id },
+        }),
+        this.prisma.session.create({
+          data: {
+            ipAddress: meta?.ipAddress || null,
+            userAgent: meta?.userAgent || null,
+            deviceType: meta?.deviceType || null,
+            token: refresh_token,
+            userId: user.id,
+            expiresAt: new Date(Date.now() + TokenExpiration.REFRESH_TOKEN),
+          },
+        }),
+      ]);
 
       return {
         user: newPayload,
