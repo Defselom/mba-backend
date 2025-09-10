@@ -8,19 +8,23 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { UserModule } from './user/user.module';
+import { UserController } from '@/user/user.controller';
+import { UserService } from '@/user/user.service';
 
 @Module({
   imports: [
     AuthModule,
     UserModule,
     PrismaModule,
+    UserModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),
   ],
-  controllers: [AppController],
+  controllers: [AppController, UserController],
   providers: [
     AppService,
+    UserService,
     {
       provide: APP_PIPE,
       useClass: ValidationPipe,

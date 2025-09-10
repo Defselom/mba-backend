@@ -99,7 +99,6 @@ model UserAccount {
   birthDate     DateTime?     @db.Date
   phone         String?       @db.VarChar(20)
   profileImage  String?       @db.VarChar(255)
-  isActive      Boolean       @default(true)
   lastLogin     DateTime?     @db.Timestamptz(6)
   createdAt     DateTime      @default(now()) @db.Timestamptz(6)
   updatedAt     DateTime      @default(now()) @updatedAt @db.Timestamptz(6)
@@ -123,6 +122,7 @@ model UserAccount {
   moderatedWebinars   Webinar[]         @relation("ModeratedWebinars")
   collaboratedWebinars Webinar[]        @relation("CollaboratorWebinars")
   partnerApplications Application[]     @relation("PartnerApplications")
+  sessions    Session[]
 
   @@map("users")
 }
@@ -349,3 +349,24 @@ model Support {
 
   @@map("supports")
 }
+
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  token     String   @unique @db.Text
+  userAgent String?  @map("user_agent") @db.Text
+  ipAddress String?  @map("ip_address") @db.VarChar(45)
+  deviceType String?  @map("device_type") @db.VarChar(100)
+  isActive  Boolean  @default(true) @map("is_active")
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(6)
+  lastUsedAt DateTime? @map("last_used_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+
+  // Relations
+  user UserAccount @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("session")
+}
+
