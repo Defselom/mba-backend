@@ -4,3 +4,6 @@ export * from './create-user-account.dto';
 export * from './create-participant-profile.dto';
 export * from './create-speaker-profile.dto';
 export * from './create-moderator-profile.dto';
+export * from './update-user.dto';
+export * from './get-all-user.dto';
+export * from './refresh-user-token.dto';
