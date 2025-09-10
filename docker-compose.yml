@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  prod-db:
+    image: postgres:15
+    container_name: school-university-prod-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: my_database
+      POSTGRES_USER: my_user
+      POSTGRES_PASSWORD: my_password
+    ports:
+      - '5452:5432'
+    volumes:
+      - prod_pg_data:/var/lib/postgresql/data
+    networks:
+      - db-network
+
+  test-db:
+    image: postgres:15
+    container_name: school-university-test-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: test_database
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+    ports:
+      - '5453:5432'
+    volumes:
+      - test_pg_data:/var/lib/postgresql/data
+    networks:
+      - db-network
+
+volumes:
+  prod_pg_data:
+  test_pg_data:
+
+networks:
+  db-network:
