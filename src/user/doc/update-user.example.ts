@@ -1,0 +1,21 @@
+export const updateUserExample = {
+  status: 200,
+  success: true,
+  message: 'User updated successfully',
+  data: {
+    id: 'cmesshcf40000w4a7cpclfxh4',
+    username: 'Mallory16',
+    email: 'Brianne_Howell@gmail.com',
+    role: 'ADMIN',
+    firstName: 'Rey',
+    lastName: 'Waelchi',
+    birthDate: '2025-08-26T00:00:00.000Z',
+    phone: '1-772-824-1421',
+    profilImage: 'https://picsum.photos/seed/mWTvo/2042/1202?blur=9',
+    universityId: null,
+    isActive: true,
+    lastLogin: null,
+    createdAt: '2025-08-26T16:57:34.240Z',
+    updatedAt: '2025-08-26T17:29:37.380Z',
+  },
+} as const;
