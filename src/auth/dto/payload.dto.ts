@@ -1,4 +1,4 @@
-import type { User } from '@/../generated/prisma';
+import type { UserAccount } from '@/../generated/prisma';
 
 export class JwtPayload {
   sub: string;
@@ -7,7 +7,7 @@ export class JwtPayload {
   iat?: number;
   exp?: number;
 }
-export type LoggedInUser = Omit<User, 'password'> & {
+export type LoggedInUser = Omit<UserAccount, 'password'> & {
   iat?: number;
   exp?: number;
 };

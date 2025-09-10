@@ -1,26 +1,39 @@
-import { Transform } from 'class-transformer';
-import { IsOptional, IsString } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 
-import { BaseUserDto } from '@/user/dto';
+import { Type } from 'class-transformer';
+import { Validate, ValidateIf, ValidateNested } from 'class-validator';
 
-export class RegisterDto extends BaseUserDto {
-  @IsString()
-  firstName: string;
+import { RoleProfileRegisterConstraint } from '@/auth/validation';
+import {
+  CreateModeratorProfileDto,
+  CreateParticipantProfileDto,
+  CreateSpeakerProfileDto,
+  CreateUserAccountDto,
+} from '@/user/dto';
+import { UserRole } from 'generated/prisma';
 
-  @IsString()
-  lastName: string;
+export class RegisterDto extends CreateUserAccountDto {
+  // Validation for participant
+  @ValidateIf((o: RegisterDto) => o.role === UserRole.PARTICIPANT)
+  @ValidateNested()
+  @Type(() => CreateParticipantProfileDto)
+  @ApiPropertyOptional({ type: CreateParticipantProfileDto })
+  participantProfile?: CreateParticipantProfileDto;
 
-  @IsString()
-  @IsOptional()
-  @Transform(({ value }: { value: string }) => value || new Date().toISOString().split('T')[0]) // ← Date actuelle
-  birthDay?: string;
+  // Validation for speaker
+  @ValidateIf((o: RegisterDto) => o.role === UserRole.SPEAKER)
+  @ValidateNested()
+  @Type(() => CreateSpeakerProfileDto)
+  @ApiPropertyOptional({ type: CreateSpeakerProfileDto })
+  speakerProfile?: CreateSpeakerProfileDto;
 
-  @IsString()
-  @IsOptional()
-  phoneNumber?: string;
+  // Validation for moderator
+  @ValidateIf((o: RegisterDto) => o.role === UserRole.MODERATOR)
+  @ValidateNested()
+  @Type(() => CreateModeratorProfileDto)
+  @ApiPropertyOptional({ type: CreateModeratorProfileDto })
+  moderatorProfile?: CreateModeratorProfileDto;
 
-  @IsString()
-  @IsOptional()
-  @Transform(({ value }: { value: string }) => value || 'https://default-avatar.com/avatar.png')
-  profilImage?: string;
+  @Validate(RoleProfileRegisterConstraint)
+  checkrole: string;
 }
