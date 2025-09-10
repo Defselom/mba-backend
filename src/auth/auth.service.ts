@@ -12,9 +12,11 @@ import { JsonWebTokenError, JwtService, NotBeforeError, TokenExpiredError } from
 import { TokenExpiration } from '@/auth/constants';
 import { JwtPayload, LoginDto } from '@/auth/dto';
 import { RegisterDto } from '@/auth/dto/register.dto';
-import { MetaData } from '@/auth/interface';
+import { MetaData, authResponse } from '@/auth/interface';
 import { hashPassword, verifyPassword } from '@/auth/utils/handlePassword';
 import { PrismaService } from '@/prisma/prisma.service';
+import { ApiResponse } from '@/shared/interfaces';
+import { ResponseUtil } from '@/shared/utils';
 import { UserRole } from 'generated/prisma';
 
 @Injectable()
@@ -113,10 +115,10 @@ export class AuthService {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password: _, ...result } = user;
 
-    return result;
+    return ResponseUtil.success(result, 'User registered successfully');
   }
 
-  async login(dto: LoginDto, meta: MetaData) {
+  async login(dto: LoginDto, meta: MetaData): Promise<ApiResponse<authResponse>> {
     // check if user exists
     const user = await this.prisma.userAccount.findFirst({
       where: {
@@ -152,19 +154,22 @@ export class AuthService {
       },
     });
 
-    return {
-      user: payload,
-      access_token,
-      refresh_token,
-    };
+    return ResponseUtil.success(
+      {
+        user: payload,
+        access_token,
+        refresh_token,
+      },
+      'Login successful',
+    );
   }
 
   logout() {
     // Implement your logout logic here
-    return { message: 'Logout successful' };
+    return ResponseUtil.success(null, 'Logged out successfully');
   }
 
-  async refreshTokens(refreshToken: string, meta: MetaData) {
+  async refreshTokens(refreshToken: string, meta: MetaData): Promise<ApiResponse<authResponse>> {
     try {
       const existingSession = await this.prisma.session.findUnique({
         where: { token: refreshToken },
@@ -224,11 +229,14 @@ export class AuthService {
         }),
       ]);
 
-      return {
-        user: newPayload,
-        access_token,
-        refresh_token,
-      };
+      return ResponseUtil.success(
+        {
+          user: newPayload,
+          access_token,
+          refresh_token,
+        },
+        'Token refreshed successfully',
+      );
     } catch (error: unknown) {
       // Gestion spécifique pour les tokens expirés
       if (error instanceof TokenExpiredError) {

@@ -12,12 +12,15 @@ import {
 
 import { ConfigService } from '@nestjs/config';
 
+import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+
 import type { Response, Request } from 'express';
 
 import { UAParser } from 'ua-parser-js';
 
 import { AuthService } from '@/auth/auth.service';
-import { LoginDto, RegisterDto } from '@/auth/dto';
+import { loginExample, refreshTokenExample, RegisterExample } from '@/auth/doc';
+import { LoginDto, RefreshUserTokenDto, RegisterDto } from '@/auth/dto';
 import { MetaData } from '@/auth/interface';
 import { clearAuthCookies, setAuthCookies } from '@/auth/utils';
 
@@ -30,6 +33,12 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(200)
+  @ApiOperation({ summary: 'User login' })
+  @ApiResponse({
+    status: 200,
+    description: 'User logged in successfully',
+    example: loginExample,
+  })
   async login(
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) res: Response,
@@ -44,17 +53,33 @@ export class AuthController {
       deviceType: new UAParser(req.headers['user-agent']).getDevice().type || 'desktop',
     };
 
-    const { user, access_token, refresh_token } = await this.authService.login(dto, meta);
+    const result = await this.authService.login(dto, meta);
+    const { access_token, refresh_token } = result.data;
 
     const isProduction = this.config.get<string>('NODE_ENV') === 'production';
 
     setAuthCookies(res, { access_token, refresh_token }, isProduction);
 
-    return { user, access_token };
+    return {
+      ...result,
+      data: {
+        ...result.data,
+        refresh_token: undefined,
+      },
+    };
   }
 
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Add a new user',
+    description: 'This endpoint allows you to register a new user.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'User registered successfully',
+    example: RegisterExample,
+  })
   register(@Body() dto: RegisterDto) {
     console.log(dto);
 
@@ -71,12 +96,22 @@ export class AuthController {
 
   @Post('refresh')
   @HttpCode(200)
+  @ApiOperation({
+    summary: 'Refresh access token',
+    description:
+      'This endpoint allows you to refresh your access token using a valid refresh token. The refresh token can be provided in the request body or as an HTTP-only cookie.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Token refreshed successfully',
+    example: refreshTokenExample,
+  })
   async refreshToken(
-    @Body('refresh_token') refresh_token: string | undefined,
+    @Body() dto: RefreshUserTokenDto,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const refreshToken = (refresh_token || req.cookies?.refresh_token) as string | undefined;
+    const refreshToken = (dto.refreshToken || req.cookies?.refresh_token) as string | undefined;
 
     console.log('Refresh Token from body or cookie:', refreshToken);
 
@@ -103,12 +138,19 @@ export class AuthController {
     setAuthCookies(
       res,
       {
-        access_token: result.access_token,
-        refresh_token: result.refresh_token,
+        access_token: result.data.access_token,
+        refresh_token: result.data.refresh_token,
       },
       isProduction,
     );
 
-    return { user: result.user, access_token: result.access_token };
+    // Return only the access token, exclude refresh token from response
+    return {
+      ...result,
+      data: {
+        ...result.data,
+        refresh_token: undefined,
+      },
+    };
   }
 }

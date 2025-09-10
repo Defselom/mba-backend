@@ -1,0 +1,21 @@
+export const RegisterExample = {
+  status: 200,
+  success: true,
+  message: 'User registered successfully',
+  data: {
+    id: 'cmfe8cq2o0000w4lptj5u1l93',
+    username: 'participansts42',
+    email: 'participanswt42@example.com',
+    role: 'PARTICIPANT',
+    status: 'ACTIVE',
+    firstName: 'Selom',
+    lastName: 'Adzomla',
+    birthDate: '1998-04-15T00:00:00.000Z',
+    phone: '+22890000001',
+    profileImage: 'https://example.com/profile.png',
+    lastLogin: null,
+    createdAt: '2025-09-10T17:05:02.209Z',
+    updatedAt: '2025-09-10T17:05:02.209Z',
+  },
+  timestamp: '2025-09-10T17:05:02.219Z',
+} as const;
