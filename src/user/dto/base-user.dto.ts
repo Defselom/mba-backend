@@ -1,6 +1,4 @@
-import { IsEmail, IsOptional, IsString, Validate, IsNotEmpty, MinLength } from 'class-validator';
-
-import { EmailOrUsernameConstraint } from '@/auth/validation/emailOrUsername.validator';
+import { IsEmail, IsOptional, IsString, IsNotEmpty, MinLength } from 'class-validator';
 
 export class BaseUserDto {
   @IsEmail()
@@ -10,9 +8,6 @@ export class BaseUserDto {
   @IsString()
   @IsOptional()
   username: string;
-
-  @Validate(EmailOrUsernameConstraint)
-  emailOrUsername: string; // Pour déclencher la validation personnalisée
 
   @IsString()
   @IsNotEmpty()
