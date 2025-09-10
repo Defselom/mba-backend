@@ -123,6 +123,8 @@ model UserAccount {
   moderatedWebinars   Webinar[]         @relation("ModeratedWebinars")
   collaboratedWebinars Webinar[]        @relation("CollaboratorWebinars")
   partnerApplications Application[]     @relation("PartnerApplications")
+
+  @@map("users")
 }
 
 model AdminProfile {
@@ -133,6 +135,8 @@ model AdminProfile {
   updatedAt     DateTime    @default(now()) @updatedAt @db.Timestamptz(6)
 
   user          UserAccount @relation(fields: [userId], references: [id])
+
+  @@map("admin_profiles")
 }
 
 model SpeakerProfile {
@@ -149,6 +153,8 @@ model SpeakerProfile {
   createdAt     DateTime @default(now()) @db.Timestamptz(6)
   updatedAt     DateTime @default(now()) @updatedAt @db.Timestamptz(6)
   user          UserAccount @relation(fields: [userId], references: [id])
+
+  @@map("speaker_profiles")
 }
 
 model ModeratorProfile {
@@ -164,6 +170,8 @@ model ModeratorProfile {
   createdAt     DateTime @default(now()) @db.Timestamptz(6)
   updatedAt     DateTime @default(now()) @updatedAt @db.Timestamptz(6)
   user          UserAccount @relation(fields: [userId], references: [id])
+
+  @@map("moderator_profiles")
 }
 
 model CollaboratorProfile {
@@ -177,6 +185,8 @@ model CollaboratorProfile {
   createdAt     DateTime @default(now()) @db.Timestamptz(6)
   updatedAt     DateTime @default(now()) @updatedAt @db.Timestamptz(6)
   user          UserAccount @relation(fields: [userId], references: [id])
+
+  @@map("collaborator_profiles")
 }
 
 model ParticipantProfile {
@@ -190,6 +200,8 @@ model ParticipantProfile {
   createdAt     DateTime @default(now()) @db.Timestamptz(6)
   updatedAt     DateTime @default(now()) @updatedAt @db.Timestamptz(6)
   user          UserAccount @relation(fields: [userId], references: [id])
+
+  @@map("participant_profiles")
 }
 
 model PartnerProfile {
@@ -203,6 +215,8 @@ model PartnerProfile {
   createdAt     DateTime @default(now()) @db.Timestamptz(6)
   updatedAt     DateTime @default(now()) @updatedAt @db.Timestamptz(6)
   user          UserAccount @relation(fields: [userId], references: [id])
+
+  @@map("partner_profiles")
 }
 
 /* // ---------- VISITOR ----------
@@ -236,6 +250,8 @@ model Webinar {
   moderatedById     String?
   moderatedBy       UserAccount?   @relation("ModeratedWebinars", fields: [moderatedById], references: [id])
   collaborators     UserAccount[]  @relation("CollaboratorWebinars")
+
+  @@map("webinars")
 }
 
 // ---------- DOCUMENT ----------
@@ -253,6 +269,8 @@ model Document {
 
   // Relations
   downloadedBy     UserAccount[] @relation("UserDownloads")
+
+  @@map("documents")
 }
 
 // ---------- TESTIMONIAL ----------
@@ -266,6 +284,8 @@ model Testimonial {
   user           UserAccount    @relation(fields: [userId], references: [id])
   webinarId      String?
   webinar        Webinar?       @relation(fields: [webinarId], references: [id])
+
+  @@map("testimonials")
 }
 
 // ---------- APPLICATION (Candidature) ----------
@@ -280,6 +300,8 @@ model Application {
   user           UserAccount      @relation(fields: [userId], references: [id])
   partnerId      String?
   partner        UserAccount?     @relation("PartnerApplications", fields: [partnerId], references: [id])
+
+  @@map("applications")
 }
 
 // ---------- PERSONALIZED SUPPORT ----------
@@ -296,6 +318,8 @@ model PersonalizedSupport {
   updatedAt            DateTime         @default(now()) @updatedAt @db.Timestamptz(6)
   userId               String
   user                 UserAccount      @relation(fields: [userId], references: [id])
+
+  @@map("personalized_supports")
 }
 
 // ---------- REGISTRATION ----------
@@ -307,6 +331,8 @@ model Registration {
   user                UserAccount    @relation(fields: [userId], references: [id])
   webinarId           String
   webinar             Webinar        @relation(fields: [webinarId], references: [id])
+
+  @@map("registrations")
 }
 
 // ---------- SUPPORT (Document upload) ----------
@@ -320,4 +346,6 @@ model Support {
   webinar         Webinar?       @relation(fields: [webinarId], references: [id])
   uploadedById    String?
   uploadedBy      UserAccount?   @relation(fields: [uploadedById], references: [id])
+
+  @@map("supports")
 }
