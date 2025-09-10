@@ -6,6 +6,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 
 import { JwtPayload, LoggedInUser } from '@/auth/dto';
 import { PrismaService } from '@/prisma/prisma.service';
+import { UserStatus } from 'generated/prisma';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
@@ -21,19 +22,24 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   }
 
   async validate(payload: JwtPayload): Promise<LoggedInUser> {
-    const user = await this.prisma.user.findUnique({
+    const user = await this.prisma.userAccount.findUnique({
       where: { id: payload.sub },
+      omit: { password: true },
     });
 
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...rest } = user;
+    console.log(user);
+
+    // check is user is active
+    if (user.status !== UserStatus.ACTIVE) {
+      throw new UnauthorizedException('User is not active');
+    }
 
     const safeUser: LoggedInUser = {
-      ...rest,
+      ...user,
       iat: payload?.iat,
       exp: payload?.exp,
     };
