@@ -18,7 +18,7 @@ import { hashPassword, verifyPassword } from '@/auth/utils/handlePassword';
 import { PrismaService } from '@/prisma/prisma.service';
 import { ApiResponse } from '@/shared/interfaces';
 import { ResponseUtil } from '@/shared/utils';
-import { UserRole } from 'generated/prisma';
+import { UserRole, UserStatus } from 'generated/prisma';
 
 @Injectable()
 export class AuthService {
@@ -69,7 +69,8 @@ export class AuthService {
         username: dto.username,
         password: hashedPassword,
         role: dto.role,
-        status: 'ACTIVE', // ou 'PENDING_VALIDATION'
+        status:
+          dto.role == UserRole.PARTICIPANT ? UserStatus.ACTIVE : UserStatus.PENDING_VALIDATION,
         firstName: dto.firstName,
         lastName: dto.lastName,
         birthDate: dto.birthDate ? new Date(dto.birthDate) : undefined,

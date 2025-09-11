@@ -5,7 +5,7 @@ import { hashPassword } from '@/auth/utils';
 import { PrismaService } from '@/prisma/prisma.service';
 import { PaginationDto } from '@/shared/dto';
 import { GetAllUserDto, UpdateUserDto } from '@/user/dto';
-import { UserStatus } from 'generated/prisma';
+import { UserRole, UserStatus } from 'generated/prisma';
 
 @Injectable()
 export class UserService {
@@ -33,7 +33,8 @@ export class UserService {
         username: dto.username,
         password: hashedPassword,
         role: dto.role,
-        status: 'ACTIVE', // ou 'PENDING_VALIDATION'
+        status:
+          dto.role == UserRole.PARTICIPANT ? UserStatus.ACTIVE : UserStatus.PENDING_VALIDATION,
         firstName: dto.firstName,
         lastName: dto.lastName,
         birthDate: dto.birthDate ? new Date(dto.birthDate) : undefined,
