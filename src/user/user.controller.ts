@@ -28,6 +28,7 @@ import { UserService } from '@/user/user.service';
 @Controller('users')
 export class UserController {
   constructor(private userService: UserService) {}
+
   @UseGuards(JwtGuard)
   @Get('me')
   @HttpCode(HttpStatus.OK)
@@ -54,6 +55,7 @@ export class UserController {
   }
 
   @Get()
+  @UseGuards(JwtGuard)
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get all users' })

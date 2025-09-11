@@ -147,6 +147,7 @@ export class AuthService {
       sub: user.id,
       username: user.username,
       email: user.email,
+      role: user.role,
     };
 
     const { access_token, refresh_token } = await this.generateTokens(payload);

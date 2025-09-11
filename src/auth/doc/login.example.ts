@@ -7,6 +7,7 @@ export const loginExample = {
       sub: 'cmfdxq3n30000w4s57mxj3587',
       username: 'participant42',
       email: 'participant42@example.com',
+      role: 'PARTICIPANT',
     },
     access_token:
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWZkeHEzbjMwMDAwdzRzNTdteGozNTg3IiwidXNlcm5hbWUiOiJwYXJ0aWNpcGFudDQyIiwiZW1haWwiOiJwYXJ0aWNpcGFudDQyQGV4YW1wbGUuY29tIiwiaWF0IjoxNzU3NTI0MjU2LCJleHAiOjE3NTg0MjQyNTZ9.ViaSsAtTnQxOSzv8OFA_Wn5XzCkjhfHedJC6Urwj5ZU',
