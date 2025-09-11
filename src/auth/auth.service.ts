@@ -174,8 +174,19 @@ export class AuthService {
     );
   }
 
-  logout() {
-    // Implement your logout logic here
+  async logout(refreshToken?: string) {
+    const currentSession = await this.prisma.session.findUnique({ where: { token: refreshToken } });
+
+    if (currentSession) {
+      await this.prisma.session.update({
+        where: { id: currentSession.id },
+        data: {
+          isActive: false,
+          revokedAt: new Date(),
+        },
+      });
+    }
+
     return ResponseUtil.success(null, 'Logged out successfully');
   }
 
@@ -197,7 +208,7 @@ export class AuthService {
       }
 
       if (!existingSession.isActive) {
-        throw new UnauthorizedException('Refresh token is no longer active. Please log in again.');
+        throw new UnauthorizedException('Your session is no longer active. Please log in again.');
       }
 
       const payload: JwtPayload = await this.jwtService.verifyAsync(refreshToken, {

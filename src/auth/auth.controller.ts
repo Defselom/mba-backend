@@ -8,6 +8,7 @@ import {
   Res,
   UnauthorizedException,
   Headers,
+  UseGuards,
 } from '@nestjs/common';
 
 import { ConfigService } from '@nestjs/config';
@@ -21,6 +22,7 @@ import { UAParser } from 'ua-parser-js';
 import { AuthService } from '@/auth/auth.service';
 import { loginExample, refreshTokenExample, RegisterExample } from '@/auth/doc';
 import { LoginDto, RefreshUserTokenDto, RegisterDto } from '@/auth/dto';
+import { JwtGuard } from '@/auth/guard';
 import { MetaData } from '@/auth/interface';
 import { clearAuthCookies, setAuthCookies } from '@/auth/utils';
 
@@ -88,11 +90,18 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtGuard)
   @ApiBearerAuth()
-  logout(@Res({ passthrough: true }) res: Response) {
+  logout(@Res({ passthrough: true }) res: Response, @Req() request: Request) {
+    const cookies = request.cookies as Record<string, string | undefined>;
+
+    const refreshToken = cookies?.refresh_token;
+
+    console.log('refresh token:', refreshToken);
+
     clearAuthCookies(res);
 
-    return this.authService.logout();
+    return this.authService.logout(refreshToken);
   }
 
   @Post('refresh')
