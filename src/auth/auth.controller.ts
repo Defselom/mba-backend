@@ -12,7 +12,7 @@ import {
 
 import { ConfigService } from '@nestjs/config';
 
-import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 import type { Response, Request } from 'express';
 
@@ -88,6 +88,7 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
   logout(@Res({ passthrough: true }) res: Response) {
     clearAuthCookies(res);
 

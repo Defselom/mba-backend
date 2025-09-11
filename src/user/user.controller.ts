@@ -10,7 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
-import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 import type { Request } from 'express';
 
@@ -31,6 +31,7 @@ export class UserController {
   @UseGuards(JwtGuard)
   @Get('me')
   @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current user information' })
   @ApiResponse({ status: 200, description: 'Connected user', example: getUserMeExample })
   getMe(@GetUser('') user: dto.LoggedInUser): { user: dto.LoggedInUser } {
@@ -39,6 +40,7 @@ export class UserController {
 
   @Post('')
   @HttpCode(HttpStatus.CREATED)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Add a new user' })
   @ApiResponse({
     status: 201,
@@ -53,6 +55,7 @@ export class UserController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get all users' })
   @ApiResponse({
     status: 200,
