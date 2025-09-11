@@ -97,6 +97,10 @@ export class AuthController {
 
     const refreshToken = cookies?.refresh_token;
 
+    if (!refreshToken) {
+      throw new UnauthorizedException('Refresh token not found please check your cookie');
+    }
+
     console.log('refresh token:', refreshToken);
 
     clearAuthCookies(res);
