@@ -8,6 +8,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
   Req,
   UseGuards,
@@ -25,10 +26,15 @@ import { GetUser } from '@/decorator/get-user.decorator';
 import { PaginationDto } from '@/shared/dto';
 import { ApiResponse as IApiResponse } from '@/shared/interfaces';
 import { generateBaseUrl, ResponseUtil } from '@/shared/utils';
-import { getAllUserExample, getUserMeExample, updateUserStatusExample } from '@/user/doc';
+import {
+  getAllUserExample,
+  getUserMeExample,
+  updateUserExample,
+  updateUserStatusExample,
+} from '@/user/doc';
 import { createUserExample } from '@/user/doc/create-user.example';
 import { updateUserRoleExample } from '@/user/doc/update-user-role.example';
-import { GetAllUserDto, UpdateUserStatusDto } from '@/user/dto';
+import { GetAllUserDto, UpdateUserDto, UpdateUserStatusDto } from '@/user/dto';
 import { UpdateUserRoleDto } from '@/user/dto/update-user-role.dto';
 import { UserService } from '@/user/user.service';
 import { UserRole } from 'generated/prisma';
@@ -94,6 +100,25 @@ export class UserController {
       'Users retrieved successfully',
       baseUrl,
     );
+  }
+
+  @Put(':id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Update current user base information' })
+  @ApiResponse({
+    status: 200,
+    description: 'User updated successfully',
+    type: UpdateUserDto,
+    example: updateUserExample,
+  })
+  async updateMe(
+    @GetUser('') user: dto.LoggedInUser,
+    @Body() dto: UpdateUserDto,
+    @Param('id') id: string,
+  ): Promise<IApiResponse<dto.LoggedInUser>> {
+    const updatedUser = await this.userService.update(id, dto);
+
+    return ResponseUtil.success(updatedUser, 'User updated successfully');
   }
 
   @Patch(':id/role')
