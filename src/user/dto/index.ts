@@ -7,3 +7,4 @@ export * from './create-moderator-profile.dto';
 export * from './update-user.dto';
 export * from './get-all-user.dto';
 export * from './refresh-user-token.dto';
+export * from './update-user-status.dto';
