@@ -109,6 +109,13 @@ export class AuthService {
           },
         });
         break;
+      case UserRole.ADMIN:
+        await this.prisma.adminProfile.create({
+          data: {
+            userId: user.id,
+          },
+        });
+        break;
 
       default:
         break;

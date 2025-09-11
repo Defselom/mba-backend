@@ -1,4 +1,9 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 
 import { LoggedInUser, RegisterDto } from '@/auth/dto';
 import { hashPassword } from '@/auth/utils';
@@ -42,6 +47,51 @@ export class UserService {
         profileImage: dto.profileImage,
       },
     });
+
+    // 4. Create role-specific profile
+    switch (dto.role) {
+      case UserRole.PARTICIPANT:
+        if (!dto.participantProfile)
+          throw new BadRequestException('Participant profile is required');
+        await this.prisma.participantProfile.create({
+          data: {
+            userId: user.id,
+            ...dto.participantProfile,
+          },
+        });
+        break;
+      case UserRole.SPEAKER:
+        if (!dto.speakerProfile) throw new BadRequestException('Speaker profile is required');
+        await this.prisma.speakerProfile.create({
+          data: {
+            userId: user.id,
+            ...dto.speakerProfile,
+          },
+        });
+        break;
+      case UserRole.MODERATOR:
+        if (!dto.moderatorProfile) throw new BadRequestException('Moderator profile is required');
+        await this.prisma.moderatorProfile.create({
+          data: {
+            userId: user.id,
+            ...dto.moderatorProfile,
+          },
+        });
+        break;
+      case UserRole.ADMIN:
+        await this.prisma.adminProfile.create({
+          data: {
+            userId: user.id,
+          },
+        });
+        break;
+
+      default:
+        break;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password: _, ...result } = user;
 
     return user;
   }
