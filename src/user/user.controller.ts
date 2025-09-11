@@ -1,9 +1,12 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
+  Param,
+  Patch,
   Post,
   Query,
   Req,
@@ -16,20 +19,25 @@ import type { Request } from 'express';
 
 import * as dto from '@/auth/dto';
 import { JwtGuard } from '@/auth/guard';
+import { RolesGuard } from '@/auth/guard';
+import { Roles } from '@/decorator';
 import { GetUser } from '@/decorator/get-user.decorator';
 import { PaginationDto } from '@/shared/dto';
 import { ApiResponse as IApiResponse } from '@/shared/interfaces';
 import { generateBaseUrl, ResponseUtil } from '@/shared/utils';
-import { getAllUserExample, getUserMeExample } from '@/user/doc';
+import { getAllUserExample, getUserMeExample, updateUserStatusExample } from '@/user/doc';
 import { createUserExample } from '@/user/doc/create-user.example';
-import { GetAllUserDto } from '@/user/dto';
+import { updateUserRoleExample } from '@/user/doc/update-user-role.example';
+import { GetAllUserDto, UpdateUserStatusDto } from '@/user/dto';
+import { UpdateUserRoleDto } from '@/user/dto/update-user-role.dto';
 import { UserService } from '@/user/user.service';
+import { UserRole } from 'generated/prisma';
 
 @Controller('users')
+@UseGuards(JwtGuard, RolesGuard)
 export class UserController {
   constructor(private userService: UserService) {}
 
-  @UseGuards(JwtGuard)
   @Get('me')
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
@@ -40,6 +48,7 @@ export class UserController {
   }
 
   @Post('')
+  @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Add a new user' })
@@ -55,6 +64,7 @@ export class UserController {
   }
 
   @Get()
+  @Roles(UserRole.ADMIN)
   @UseGuards(JwtGuard)
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
@@ -84,5 +94,49 @@ export class UserController {
       'Users retrieved successfully',
       baseUrl,
     );
+  }
+
+  @Patch(':id/role')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Update user role', description: 'Update the role of a user by ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'User role updated successfully',
+    example: updateUserRoleExample,
+  })
+  @HttpCode(HttpStatus.OK)
+  async updateRole(@Param('id') id: string, @Body() dto: UpdateUserRoleDto) {
+    await this.userService.updateRole(id, dto.role);
+
+    return ResponseUtil.success(undefined, 'User role updated successfully');
+  }
+
+  @Patch(':id/status')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({
+    summary: 'Update user status',
+    description: 'Handle a user status update by ID',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User status updated successfully',
+    example: updateUserStatusExample,
+  })
+  @HttpCode(HttpStatus.OK)
+  async updateStatus(@Param('id') id: string, @Body() dto: UpdateUserStatusDto) {
+    await this.userService.updateStatus(id, dto.status);
+
+    return ResponseUtil.success(undefined, 'User status updated successfully');
+  }
+
+  @Delete(':id')
+  @Roles(UserRole.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete a user' })
+  @ApiResponse({ status: 200, description: 'User deleted successfully' })
+  async deleteUser(@Param('id') id: string): Promise<IApiResponse<void>> {
+    await this.userService.delete(id);
+
+    return ResponseUtil.success(undefined, 'User deleted successfully');
   }
 }

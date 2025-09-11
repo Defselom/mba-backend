@@ -83,13 +83,26 @@ export class UserService {
 
   // delete user
   async delete(id: string): Promise<void> {
-    const user = await this.prisma.userAccount.findUnique({ where: { id } });
+    const user = await this.prisma.userAccount.findUnique({
+      where: { id },
+      select: { role: true },
+    });
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    await this.prisma.userAccount.delete({ where: { id } });
+    await this.prisma.userAccount.delete({
+      where: { id },
+      include: {
+        adminProfile: true,
+        speakerProfile: true,
+        moderatorProfile: true,
+        collaboratorProfile: true,
+        participantProfile: true,
+        partnerProfile: true,
+      },
+    });
   }
 
   // update user status
@@ -103,6 +116,21 @@ export class UserService {
     const updated = await this.prisma.userAccount.update({
       where: { id },
       data: { status: userStatus },
+    });
+
+    console.log(updated);
+  }
+
+  async updateRole(id: string, userRole: UserRole): Promise<void> {
+    const user = await this.prisma.userAccount.findUnique({ where: { id } });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const updated = await this.prisma.userAccount.update({
+      where: { id },
+      data: { role: userRole },
     });
 
     console.log(updated);
