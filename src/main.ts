@@ -5,6 +5,8 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 import cookieParser from 'cookie-parser';
 
+import helmet from 'helmet';
+
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -30,6 +32,10 @@ async function bootstrap() {
     credentials: true,
     maxAge: 86400,
   });
+
+  app.use(helmet());
+
+  app.use(helmet.crossOriginResourcePolicy({ policy: 'cross-origin' }));
 
   app.useGlobalPipes(
     new ValidationPipe({
