@@ -130,13 +130,31 @@ export class WebinarController {
   }
 
   // [ADMIN] View registrations for a webinar
-  @Get(':id/registrations')
+  @Get('registrations')
   @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Get registrations for a webinar' })
+  @ApiOperation({ summary: 'Get All registrations ' })
   @ApiResponse({
     status: 200,
     description: 'List of registrations',
+
+    type: [WebinarRegistrationDto],
+    isArray: true,
+  })
+  async getAllRegistrations(): Promise<IApiResponse<WebinarRegistrationDto[]>> {
+    const registrations = await this.webinarService.getAllRegistrations();
+
+    return ResponseUtil.success(registrations, 'Registrations retrieved successfully');
+  }
+
+  // [ADMIN] View registrations for a webinar
+  @Get(':id/registrations')
+  @Roles(UserRole.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get All registrations for a webinar' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of registrations for the webinar',
 
     type: [WebinarRegistrationDto],
     isArray: true,
@@ -145,5 +163,46 @@ export class WebinarController {
     const registrations = await this.webinarService.getRegistrations(id);
 
     return ResponseUtil.success(registrations, 'Registrations retrieved successfully');
+  }
+
+  // [USER] Register for a webinar (if SCHEDULED and not full)
+  @Post('/register')
+  @Roles(UserRole.ADMIN)
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Register for a webinar' })
+  @ApiResponse({
+    status: 201,
+    description: 'Registration successful',
+    type: WebinarRegistrationDto,
+  })
+  async register(
+    @Body() dto: WebinarRegistrationDto,
+  ): Promise<IApiResponse<WebinarRegistrationDto>> {
+    const registration = await this.webinarService.registerUser(dto.webinarId, dto.userId);
+
+    return ResponseUtil.success(
+      registration,
+      'Registration successful',
+      undefined,
+      HttpStatus.CREATED,
+    );
+  }
+
+  // [USER] Cancel registration for a webinar (if SCHEDULED)
+  @Patch('cancel-registration')
+  @Roles(UserRole.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Cancel registration for a webinar' })
+  @ApiResponse({
+    status: 200,
+    description: 'Cancellation successful',
+    type: WebinarRegistrationDto,
+  })
+  async cancelRegistration(
+    @Body() dto: WebinarRegistrationDto,
+  ): Promise<IApiResponse<WebinarRegistrationDto>> {
+    const registration = await this.webinarService.unregisterUser(dto.webinarId, dto.userId);
+
+    return ResponseUtil.success(registration, 'Cancellation successful');
   }
 }

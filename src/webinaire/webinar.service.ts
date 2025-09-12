@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 
 import { PrismaService } from '@/prisma/prisma.service';
 import { AssignActorsDto, CreateWebinarDto, UpdateWebinarDto } from '@/webinaire/dto/index.dto';
-import { WebinarStatus } from 'generated/prisma';
+import { RegistrationStatus, WebinarStatus } from 'generated/prisma';
 
 @Injectable()
 export class WebinarService {
@@ -103,6 +103,15 @@ export class WebinarService {
     });
   }
 
+  // Get registrations for a webinar
+  async getAllRegistrations() {
+    return await this.prisma.registration.findMany({
+      include: {
+        user: true,
+      },
+    });
+  }
+
   // Get registrations for a webinar (with user info)
   async getRegistrations(webinarId: string) {
     return await this.prisma.registration.findMany({
@@ -110,6 +119,77 @@ export class WebinarService {
       include: {
         user: true, // Get UserAccount info for each registration
       },
+    });
+  }
+
+  // Register a user for a webinar
+  async registerUser(webinarId: string, userId: string) {
+    const webinar = await this.prisma.webinar.findUnique({
+      where: { id: webinarId },
+      include: { registrations: true },
+    });
+
+    if (!webinar) throw new NotFoundException('Webinar not found');
+
+    if (webinar.status !== WebinarStatus.SCHEDULED) {
+      throw new BadRequestException('Cannot register for a webinar that is not scheduled');
+    }
+
+    if (webinar.registrations.length >= webinar.maxCapacity) {
+      throw new BadRequestException('Webinar has reached its maximum capacity');
+    }
+
+    const existingRegistration = await this.prisma.registration.findUnique({
+      where: {
+        webinarId_userId: {
+          webinarId: webinarId,
+          userId: userId,
+        },
+      },
+    });
+
+    if (existingRegistration) {
+      throw new BadRequestException('User is already registered for this webinar');
+    }
+
+    return await this.prisma.registration.create({
+      data: {
+        webinarId,
+        userId,
+        status: RegistrationStatus.CONFIRMED,
+      },
+    });
+  }
+
+  // Unregister a user from a webinar
+  async unregisterUser(webinarId: string, userId: string) {
+    const registration = await this.prisma.registration.findUnique({
+      where: {
+        webinarId_userId: {
+          webinarId,
+          userId,
+        },
+      },
+      include: { webinar: true },
+    });
+
+    if (!registration) {
+      throw new NotFoundException('Registration not found for this user and webinar');
+    }
+
+    if (registration.status === RegistrationStatus.CANCELED) {
+      throw new BadRequestException('Registration is already canceled');
+    }
+
+    if (!registration.webinar) {
+      throw new NotFoundException('Associated webinar not found');
+    }
+
+    return await this.prisma.registration.update({
+      where: {
+        id: registration.id,
+      },
+      data: { status: RegistrationStatus.CANCELED },
     });
   }
 }
