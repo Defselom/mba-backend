@@ -10,14 +10,14 @@ interface AuthTokens {
 export function setAuthCookies(res: Response, tokens: AuthTokens, isProduction: boolean) {
   res.cookie('access_token', tokens.access_token, {
     httpOnly: true,
-    sameSite: false,
+    sameSite: 'none',
     secure: isProduction,
     maxAge: TokenExpiration.ACCESS_TOKEN,
   });
 
   res.cookie('refresh_token', tokens.refresh_token, {
     httpOnly: true,
-    sameSite: false,
+    sameSite: 'none',
     secure: isProduction,
     maxAge: TokenExpiration.REFRESH_TOKEN,
   });
