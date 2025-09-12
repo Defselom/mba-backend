@@ -331,7 +331,8 @@ model Registration {
   user                UserAccount    @relation(fields: [userId], references: [id])
   webinarId           String
   webinar             Webinar        @relation(fields: [webinarId], references: [id])
-
+  
+  @@unique([webinarId, userId])
   @@map("registrations")
 }
 
