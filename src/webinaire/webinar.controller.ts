@@ -27,7 +27,6 @@ import {
   getAllRegistrationDoc,
   getAllWebinarsDoc,
 } from '@/webinaire/doc/index.doc';
-import { GetWebinarRegistrationDto } from '@/webinaire/dto/get-webinar-registration.dto';
 import {
   AssignActorsDto,
   CreateWebinarDto,
@@ -200,8 +199,8 @@ export class WebinarController {
     example: addRegistrationDoc,
   })
   async cancelRegistration(
-    @Body() dto: GetWebinarRegistrationDto,
-  ): Promise<IApiResponse<GetWebinarRegistrationDto>> {
+    @Body() dto: WebinarRegistrationDto,
+  ): Promise<IApiResponse<WebinarRegistrationDto>> {
     const registration = await this.webinarService.unregisterUser(dto.webinarId, dto.userId);
 
     return ResponseUtil.success(registration, 'Cancellation successful');
