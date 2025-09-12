@@ -164,4 +164,15 @@ export class UserController {
 
     return ResponseUtil.success(undefined, 'User deleted successfully');
   }
+
+  @Get(':id/registrations')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get user registrations' })
+  @ApiResponse({ status: 200, description: 'User registrations retrieved successfully' })
+  async getUserRegistrations(@Param('id') id: string): Promise<IApiResponse<any>> {
+    const registrations = await this.userService.getUserRegistrations(id);
+
+    return ResponseUtil.success(registrations, 'User registrations retrieved successfully');
+  }
 }

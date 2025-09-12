@@ -22,7 +22,12 @@ import { Roles } from '@/decorator';
 import { PaginationDto } from '@/shared/dto';
 import { ApiResponse as IApiResponse } from '@/shared/interfaces';
 import { ResponseUtil } from '@/shared/utils';
-import { getAllWebinarsDoc } from '@/webinaire/doc/index.doc';
+import {
+  addRegistrationDoc,
+  getAllRegistrationDoc,
+  getAllWebinarsDoc,
+} from '@/webinaire/doc/index.doc';
+import { GetWebinarRegistrationDto } from '@/webinaire/dto/get-webinar-registration.dto';
 import {
   AssignActorsDto,
   CreateWebinarDto,
@@ -137,9 +142,7 @@ export class WebinarController {
   @ApiResponse({
     status: 200,
     description: 'List of registrations',
-
-    type: [WebinarRegistrationDto],
-    isArray: true,
+    example: getAllRegistrationDoc,
   })
   async getAllRegistrations(): Promise<IApiResponse<WebinarRegistrationDto[]>> {
     const registrations = await this.webinarService.getAllRegistrations();
@@ -155,9 +158,7 @@ export class WebinarController {
   @ApiResponse({
     status: 200,
     description: 'List of registrations for the webinar',
-
-    type: [WebinarRegistrationDto],
-    isArray: true,
+    example: getAllRegistrationDoc,
   })
   async getRegistrations(@Param('id') id: string): Promise<IApiResponse<WebinarRegistrationDto[]>> {
     const registrations = await this.webinarService.getRegistrations(id);
@@ -173,7 +174,7 @@ export class WebinarController {
   @ApiResponse({
     status: 201,
     description: 'Registration successful',
-    type: WebinarRegistrationDto,
+    example: addRegistrationDoc,
   })
   async register(
     @Body() dto: WebinarRegistrationDto,
@@ -196,11 +197,11 @@ export class WebinarController {
   @ApiResponse({
     status: 200,
     description: 'Cancellation successful',
-    type: WebinarRegistrationDto,
+    example: addRegistrationDoc,
   })
   async cancelRegistration(
-    @Body() dto: WebinarRegistrationDto,
-  ): Promise<IApiResponse<WebinarRegistrationDto>> {
+    @Body() dto: GetWebinarRegistrationDto,
+  ): Promise<IApiResponse<GetWebinarRegistrationDto>> {
     const registration = await this.webinarService.unregisterUser(dto.webinarId, dto.userId);
 
     return ResponseUtil.success(registration, 'Cancellation successful');

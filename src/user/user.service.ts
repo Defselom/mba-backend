@@ -185,4 +185,13 @@ export class UserService {
 
     console.log(updated);
   }
+
+  async getUserRegistrations(userId: string) {
+    const registrations = await this.prisma.registration.findMany({
+      where: { userId },
+      include: { webinar: true },
+    });
+
+    return registrations;
+  }
 }
