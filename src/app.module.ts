@@ -1,7 +1,8 @@
+import { CacheInterceptor, CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_PIPE } from '@nestjs/core';
+import { APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -22,6 +23,9 @@ import { UserService } from '@/user/user.service';
       isGlobal: true,
     }),
     WebinarModule,
+    CacheModule.register({
+      isGlobal: true,
+    }),
   ],
   controllers: [AppController, UserController],
   providers: [
@@ -30,6 +34,10 @@ import { UserService } from '@/user/user.service';
     {
       provide: APP_PIPE,
       useClass: ValidationPipe,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: CacheInterceptor,
     },
   ],
 })

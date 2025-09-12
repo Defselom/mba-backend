@@ -1,3 +1,4 @@
+import { CacheTTL } from '@nestjs/cache-manager';
 import {
   Body,
   Controller,
@@ -35,6 +36,7 @@ import { WebinarService } from '@/webinaire/webinar.service';
 import { UserRole } from 'generated/prisma'; // Adjust to your actual enum
 
 @Controller('webinars')
+@CacheTTL(500)
 @UseGuards(JwtGuard, RolesGuard)
 @ApiBearerAuth()
 export class WebinarController {
