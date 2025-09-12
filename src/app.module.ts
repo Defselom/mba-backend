@@ -1,4 +1,4 @@
-import { CacheInterceptor, CacheModule } from '@nestjs/cache-manager';
+import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
@@ -10,6 +10,7 @@ import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { UserModule } from './user/user.module';
 import { WebinarModule } from './webinaire/webinar.module';
+import { HttpCacheInterceptor } from '@/shared/interceptors';
 import { UserController } from '@/user/user.controller';
 import { UserService } from '@/user/user.service';
 
@@ -25,6 +26,7 @@ import { UserService } from '@/user/user.service';
     WebinarModule,
     CacheModule.register({
       isGlobal: true,
+      ttl: 50000,
     }),
   ],
   controllers: [AppController, UserController],
@@ -37,7 +39,7 @@ import { UserService } from '@/user/user.service';
     },
     {
       provide: APP_INTERCEPTOR,
-      useClass: CacheInterceptor,
+      useClass: HttpCacheInterceptor,
     },
   ],
 })

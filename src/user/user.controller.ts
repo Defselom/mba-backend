@@ -1,4 +1,3 @@
-import { CacheTTL } from '@nestjs/cache-manager';
 import {
   Body,
   Controller,
@@ -41,7 +40,6 @@ import { UserService } from '@/user/user.service';
 import { UserRole } from 'generated/prisma';
 
 @Controller('users')
-@CacheTTL(500)
 @UseGuards(JwtGuard, RolesGuard)
 export class UserController {
   constructor(private userService: UserService) {}
