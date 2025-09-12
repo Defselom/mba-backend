@@ -12,6 +12,25 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api/v1');
 
+  const allowedOrigins =
+    process.env.NODE_ENV === 'production'
+      ? ['https://mba-frontend-3gl7.vercel.app', 'http://localhost:3000', 'http://127.0.0.1:3000']
+      : [
+          'http://localhost:3000',
+          'http://127.0.0.1:3000',
+          'http://192.168.1.83:3000',
+          'http://192.168.1.87:3000',
+          'https://mba-frontend-3gl7.vercel.app/',
+        ];
+
+  app.enableCors({
+    origin: allowedOrigins,
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    credentials: true,
+    maxAge: 86400,
+  });
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
