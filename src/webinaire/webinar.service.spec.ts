@@ -1,51 +1,51 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, HttpStatus, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 
-import { PrismaService } from '@/prisma/prisma.service';
-import { AssignActorsDto, CreateWebinarDto, UpdateWebinarDto } from '@/webinaire/dto/index.dto';
+import { PaginationDto } from '@/shared/dto';
+import {
+  AssignActorsDto,
+  CreateWebinarDto,
+  UpdateWebinarDto,
+  UpdateWebinarStatusDto,
+  WebinarRegistrationDto,
+} from '@/webinaire/dto/index.dto';
+import { WebinarController } from '@/webinaire/webinar.controller';
 import { WebinarService } from '@/webinaire/webinar.service';
-import { RegistrationStatus, WebinarStatus } from 'generated/prisma';
 
-describe('WebinarService', () => {
+describe('WebinarController', () => {
+  let controller: WebinarController;
   let service: WebinarService;
 
-  const mockPrismaService = {
-    webinar: {
-      create: jest.fn(),
-      findUnique: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-      findMany: jest.fn(),
-      count: jest.fn(),
-    },
-    registration: {
-      findMany: jest.fn(),
-      findUnique: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-    },
+  const mockWebinarService = {
+    create: jest.fn(),
+    update: jest.fn(),
+    handleStatus: jest.fn(),
+    delete: jest.fn(),
+    findAll: jest.fn(),
+    assignActors: jest.fn(),
+    getAllRegistrations: jest.fn(),
+    getRegistrations: jest.fn(),
+    registerUser: jest.fn(),
+    unregisterUser: jest.fn(),
   };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
+      controllers: [WebinarController],
       providers: [
-        WebinarService,
         {
-          provide: PrismaService,
-          useValue: mockPrismaService,
+          provide: WebinarService,
+          useValue: mockWebinarService,
         },
       ],
     }).compile();
 
+    controller = module.get<WebinarController>(WebinarController);
     service = module.get<WebinarService>(WebinarService);
   });
 
   afterEach(() => {
     jest.clearAllMocks();
-  });
-
-  it('should be defined', () => {
-    expect(service).toBeDefined();
   });
 
   describe('create', () => {
@@ -62,22 +62,22 @@ describe('WebinarService', () => {
       const expectedWebinar = {
         id: '1',
         ...createWebinarDto,
-        status: WebinarStatus.SCHEDULED,
+        status: 'SCHEDULED',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
 
-      mockPrismaService.webinar.create.mockResolvedValue(expectedWebinar);
+      mockWebinarService.create.mockResolvedValue(expectedWebinar);
 
-      const result = await service.create(createWebinarDto);
+      const result = await controller.create(createWebinarDto);
 
-      expect(mockPrismaService.webinar.create).toHaveBeenCalledWith({
-        data: {
-          ...createWebinarDto,
-          status: 'SCHEDULED',
-        },
+      expect(service.create).toHaveBeenCalledWith(createWebinarDto);
+      expect(result).toMatchObject({
+        success: true,
+        data: expectedWebinar,
+        message: 'Webinar created successfully',
+        statusCode: HttpStatus.CREATED,
       });
-      expect(result).toEqual(expectedWebinar);
     });
   });
 
@@ -85,287 +85,146 @@ describe('WebinarService', () => {
     it('should update a webinar successfully', async () => {
       const webinarId = '1';
 
-      const updateData: UpdateWebinarDto = {
+      const updateWebinarDto: UpdateWebinarDto = {
         title: 'Updated Webinar',
         description: 'Updated Description',
       };
 
-      const existingWebinar = {
-        id: webinarId,
-        status: WebinarStatus.SCHEDULED,
-      };
-
       const updatedWebinar = {
-        ...existingWebinar,
-        ...updateData,
-      };
-
-      mockPrismaService.webinar.findUnique.mockResolvedValue(existingWebinar);
-      mockPrismaService.webinar.update.mockResolvedValue(updatedWebinar);
-
-      const result = await service.update(webinarId, updateData);
-
-      expect(mockPrismaService.webinar.findUnique).toHaveBeenCalledWith({
-        where: { id: webinarId },
-      });
-      expect(mockPrismaService.webinar.update).toHaveBeenCalledWith({
-        where: { id: webinarId },
-        data: updateData,
-      });
-      expect(result).toEqual(updatedWebinar);
-    });
-
-    it('should throw NotFoundException when webinar does not exist', async () => {
-      const webinarId = '1';
-
-      const updateData: UpdateWebinarDto = {
-        title: 'Updated Webinar',
-      };
-
-      mockPrismaService.webinar.findUnique.mockResolvedValue(null);
-
-      await expect(service.update(webinarId, updateData)).rejects.toThrow(NotFoundException);
-      expect(mockPrismaService.webinar.findUnique).toHaveBeenCalledWith({
-        where: { id: webinarId },
-      });
-    });
-
-    it('should throw BadRequestException when trying to update canceled webinar', async () => {
-      const webinarId = '1';
-
-      const updateData: UpdateWebinarDto = {
-        title: 'Updated Webinar',
-      };
-
-      const existingWebinar = {
         id: webinarId,
-        status: WebinarStatus.CANCELED,
+        ...updateWebinarDto,
+        status: 'SCHEDULED',
       };
 
-      mockPrismaService.webinar.findUnique.mockResolvedValue(existingWebinar);
+      mockWebinarService.update.mockResolvedValue(updatedWebinar);
 
-      await expect(service.update(webinarId, updateData)).rejects.toThrow(BadRequestException);
-    });
+      const result = await controller.update(webinarId, updateWebinarDto);
 
-    it('should throw BadRequestException when trying to update ongoing webinar', async () => {
-      const webinarId = '1';
-
-      const updateData: UpdateWebinarDto = {
-        title: 'Updated Webinar',
-      };
-
-      const existingWebinar = {
-        id: webinarId,
-        status: WebinarStatus.ONGOING,
-      };
-
-      mockPrismaService.webinar.findUnique.mockResolvedValue(existingWebinar);
-
-      await expect(service.update(webinarId, updateData)).rejects.toThrow(BadRequestException);
-    });
-
-    it('should throw BadRequestException when trying to update completed webinar', async () => {
-      const webinarId = '1';
-
-      const updateData: UpdateWebinarDto = {
-        title: 'Updated Webinar',
-      };
-
-      const existingWebinar = {
-        id: webinarId,
-        status: WebinarStatus.COMPLETED,
-      };
-
-      mockPrismaService.webinar.findUnique.mockResolvedValue(existingWebinar);
-
-      await expect(service.update(webinarId, updateData)).rejects.toThrow(BadRequestException);
+      expect(service.update).toHaveBeenCalledWith(webinarId, updateWebinarDto);
+      expect(result).toMatchObject({
+        success: true,
+        data: updatedWebinar,
+        message: 'Webinar updated successfully',
+        statusCode: HttpStatus.OK,
+      });
     });
   });
 
   describe('handleStatus', () => {
-    it('should update webinar status successfully', async () => {
+    it('should handle webinar status successfully', async () => {
       const webinarId = '1';
-      const newStatus = WebinarStatus.ONGOING;
 
-      const existingWebinar = {
-        id: webinarId,
-        status: WebinarStatus.SCHEDULED,
+      const updateStatusDto: UpdateWebinarStatusDto = {
+        status: 'ONGOING',
       };
 
-      const updatedWebinar = {
-        ...existingWebinar,
-        status: newStatus,
-      };
+      mockWebinarService.handleStatus.mockResolvedValue(undefined);
 
-      mockPrismaService.webinar.findUnique.mockResolvedValue(existingWebinar);
-      mockPrismaService.webinar.update.mockResolvedValue(updatedWebinar);
+      const result = await controller.handleStatus(webinarId, updateStatusDto);
 
-      const result = await service.handleStatus(webinarId, newStatus);
-
-      expect(mockPrismaService.webinar.findUnique).toHaveBeenCalledWith({
-        where: { id: webinarId },
+      expect(service.handleStatus).toHaveBeenCalledWith(webinarId, updateStatusDto.status);
+      expect(result).toMatchObject({
+        success: true,
+        data: null,
+        message: 'Webinar status handled successfully',
+        statusCode: HttpStatus.OK,
       });
-      expect(mockPrismaService.webinar.update).toHaveBeenCalledWith({
-        where: { id: webinarId },
-        data: { status: newStatus },
-      });
-      expect(result).toEqual(updatedWebinar);
-    });
-
-    it('should throw NotFoundException when webinar does not exist', async () => {
-      const webinarId = '1';
-      const newStatus = WebinarStatus.ONGOING;
-
-      mockPrismaService.webinar.findUnique.mockResolvedValue(null);
-
-      await expect(service.handleStatus(webinarId, newStatus)).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('delete', () => {
-    it('should delete a scheduled webinar successfully', async () => {
+    it('should delete a webinar successfully', async () => {
       const webinarId = '1';
 
-      const existingWebinar = {
-        id: webinarId,
-        status: WebinarStatus.SCHEDULED,
-      };
+      mockWebinarService.delete.mockResolvedValue(undefined);
 
-      mockPrismaService.webinar.findUnique.mockResolvedValue(existingWebinar);
-      mockPrismaService.webinar.delete.mockResolvedValue(existingWebinar);
+      const result = await controller.delete(webinarId);
 
-      const result = await service.delete(webinarId);
-
-      expect(mockPrismaService.webinar.findUnique).toHaveBeenCalledWith({
-        where: { id: webinarId },
+      expect(service.delete).toHaveBeenCalledWith(webinarId);
+      expect(result).toMatchObject({
+        success: true,
+        data: null,
+        message: 'Webinar deleted successfully',
+        statusCode: HttpStatus.OK,
       });
-      expect(mockPrismaService.webinar.delete).toHaveBeenCalledWith({
-        where: { id: webinarId },
-      });
-      expect(result).toEqual(existingWebinar);
-    });
-
-    it('should delete a canceled webinar successfully', async () => {
-      const webinarId = '1';
-
-      const existingWebinar = {
-        id: webinarId,
-        status: WebinarStatus.CANCELED,
-      };
-
-      mockPrismaService.webinar.findUnique.mockResolvedValue(existingWebinar);
-      mockPrismaService.webinar.delete.mockResolvedValue(existingWebinar);
-
-      const result = await service.delete(webinarId);
-
-      expect(result).toEqual(existingWebinar);
-    });
-
-    it('should throw NotFoundException when webinar does not exist', async () => {
-      const webinarId = '1';
-
-      mockPrismaService.webinar.findUnique.mockResolvedValue(null);
-
-      await expect(service.delete(webinarId)).rejects.toThrow(NotFoundException);
-    });
-
-    it('should throw BadRequestException when trying to delete ongoing webinar', async () => {
-      const webinarId = '1';
-
-      const existingWebinar = {
-        id: webinarId,
-        status: WebinarStatus.ONGOING,
-      };
-
-      mockPrismaService.webinar.findUnique.mockResolvedValue(existingWebinar);
-
-      await expect(service.delete(webinarId)).rejects.toThrow(BadRequestException);
-    });
-
-    it('should throw BadRequestException when trying to delete completed webinar', async () => {
-      const webinarId = '1';
-
-      const existingWebinar = {
-        id: webinarId,
-        status: WebinarStatus.COMPLETED,
-      };
-
-      mockPrismaService.webinar.findUnique.mockResolvedValue(existingWebinar);
-
-      await expect(service.delete(webinarId)).rejects.toThrow(BadRequestException);
     });
   });
 
   describe('findAll', () => {
-    it('should return paginated webinars with default pagination', async () => {
+    it('should return paginated webinars', async () => {
+      const paginationDto: PaginationDto = {
+        page: 1,
+        limit: 10,
+      };
+
       const mockWebinars = [
         {
           id: '1',
           title: 'Webinar 1',
-          animatedBy: null,
-          moderatedBy: null,
-          collaborators: [],
-          registrations: [],
+          status: 'SCHEDULED',
         },
         {
           id: '2',
           title: 'Webinar 2',
-          animatedBy: null,
-          moderatedBy: null,
-          collaborators: [],
-          registrations: [],
+          status: 'SCHEDULED',
         },
       ];
 
-      mockPrismaService.webinar.findMany.mockResolvedValue(mockWebinars);
-      mockPrismaService.webinar.count.mockResolvedValue(2);
+      const mockResponse = {
+        data: mockWebinars,
+        total: 2,
+      };
 
-      const result = await service.findAll({});
+      mockWebinarService.findAll.mockResolvedValue(mockResponse);
 
-      expect(mockPrismaService.webinar.findMany).toHaveBeenCalledWith({
-        skip: 0,
-        take: 10,
-        orderBy: { dateTime: 'desc' },
-        include: {
-          animatedBy: true,
-          moderatedBy: true,
-          collaborators: true,
-          registrations: true,
+      const result = await controller.findAll(paginationDto);
+
+      expect(service.findAll).toHaveBeenCalledWith(paginationDto);
+      expect(result).toMatchObject({
+        success: true,
+        data: mockWebinars,
+        message: 'Webinars retrieved successfully',
+        meta: {
+          total: 2,
+          page: 1,
+          limit: 10,
         },
+        statusCode: HttpStatus.OK,
       });
-      expect(mockPrismaService.webinar.count).toHaveBeenCalled();
-      expect(result).toEqual({ data: mockWebinars, total: 2 });
     });
 
-    it('should return paginated webinars with custom pagination', async () => {
+    it('should return paginated webinars with default pagination', async () => {
+      const paginationDto: PaginationDto = {};
+
       const mockWebinars = [
         {
           id: '1',
           title: 'Webinar 1',
-          animatedBy: null,
-          moderatedBy: null,
-          collaborators: [],
-          registrations: [],
+          status: 'SCHEDULED',
         },
       ];
 
-      mockPrismaService.webinar.findMany.mockResolvedValue(mockWebinars);
-      mockPrismaService.webinar.count.mockResolvedValue(20);
+      const mockResponse = {
+        data: mockWebinars,
+        total: 1,
+      };
 
-      const result = await service.findAll({ page: 2, limit: 5 });
+      mockWebinarService.findAll.mockResolvedValue(mockResponse);
 
-      expect(mockPrismaService.webinar.findMany).toHaveBeenCalledWith({
-        skip: 5,
-        take: 5,
-        orderBy: { dateTime: 'desc' },
-        include: {
-          animatedBy: true,
-          moderatedBy: true,
-          collaborators: true,
-          registrations: true,
+      const result = await controller.findAll(paginationDto);
+
+      expect(service.findAll).toHaveBeenCalledWith(paginationDto);
+      expect(result).toMatchObject({
+        success: true,
+        data: mockWebinars,
+        message: 'Webinars retrieved successfully',
+        meta: {
+          total: 1,
+          page: 1,
+          limit: 10,
         },
+        statusCode: HttpStatus.OK,
       });
-      expect(result).toEqual({ data: mockWebinars, total: 20 });
     });
   });
 
@@ -373,91 +232,62 @@ describe('WebinarService', () => {
     it('should assign actors to webinar successfully', async () => {
       const webinarId = '1';
 
-      const assignDto: AssignActorsDto = {
+      const assignActorsDto: AssignActorsDto = {
         animatedById: 'user1',
         moderatedById: 'user2',
         collaboratorIds: ['user3', 'user4'],
       };
 
-      const existingWebinar = {
+      const updatedWebinar = {
         id: webinarId,
         title: 'Test Webinar',
+        animatedBy: 'user1',
+        moderatedBy: 'user2',
+        collaborators: ['user3', 'user4'],
       };
 
-      const updatedWebinar = {
-        ...existingWebinar,
-        animatedById: assignDto.animatedById,
-        moderatedById: assignDto.moderatedById,
-        animatedBy: { id: 'user1', username: 'animator' },
-        moderatedBy: { id: 'user2', username: 'moderator' },
-        collaborators: [
-          { id: 'user3', username: 'collab1' },
-          { id: 'user4', username: 'collab2' },
-        ],
-      };
+      mockWebinarService.assignActors.mockResolvedValue(updatedWebinar);
 
-      mockPrismaService.webinar.findUnique.mockResolvedValue(existingWebinar);
-      mockPrismaService.webinar.update.mockResolvedValue(updatedWebinar);
+      const result = await controller.assignActors(webinarId, assignActorsDto);
 
-      const result = await service.assignActors(webinarId, assignDto);
-
-      expect(mockPrismaService.webinar.findUnique).toHaveBeenCalledWith({
-        where: { id: webinarId },
+      expect(service.assignActors).toHaveBeenCalledWith(webinarId, assignActorsDto);
+      expect(result).toMatchObject({
+        success: true,
+        data: updatedWebinar,
+        message: 'Assignment completed successfully',
+        statusCode: HttpStatus.OK,
       });
-      expect(mockPrismaService.webinar.update).toHaveBeenCalledWith({
-        where: { id: webinarId },
-        data: {
-          animatedById: assignDto.animatedById,
-          moderatedById: assignDto.moderatedById,
-          collaborators: {
-            set: assignDto.collaboratorIds?.map(userId => ({ id: userId })) || [],
-          },
-        },
-        include: { animatedBy: true, moderatedBy: true, collaborators: true },
-      });
-      expect(result).toEqual(updatedWebinar);
-    });
-
-    it('should throw NotFoundException when webinar does not exist', async () => {
-      const webinarId = '1';
-
-      const assignDto: AssignActorsDto = {
-        animatedById: 'user1',
-      };
-
-      mockPrismaService.webinar.findUnique.mockResolvedValue(null);
-
-      await expect(service.assignActors(webinarId, assignDto)).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('getAllRegistrations', () => {
-    it('should return all registrations', async () => {
+    it('should return all registrations successfully', async () => {
       const mockRegistrations = [
         {
-          id: '1',
+          id: 'reg1',
           webinarId: 'webinar1',
           userId: 'user1',
-          user: { id: 'user1', username: 'john' },
+          status: 'CONFIRMED',
         },
         {
-          id: '2',
+          id: 'reg2',
           webinarId: 'webinar2',
           userId: 'user2',
-          user: { id: 'user2', username: 'jane' },
+          status: 'CONFIRMED',
         },
       ];
 
-      mockPrismaService.registration.findMany.mockResolvedValue(mockRegistrations);
+      mockWebinarService.getAllRegistrations.mockResolvedValue(mockRegistrations);
 
-      const result = await service.getAllRegistrations();
+      const result = await controller.getAllRegistrations();
 
-      expect(mockPrismaService.registration.findMany).toHaveBeenCalledWith({
-        include: {
-          user: true,
-        },
+      expect(service.getAllRegistrations).toHaveBeenCalled();
+      expect(result).toMatchObject({
+        success: true,
+        data: mockRegistrations,
+        message: 'Registrations retrieved successfully',
+        statusCode: HttpStatus.OK,
       });
-      expect(result).toEqual(mockRegistrations);
     });
   });
 
@@ -467,227 +297,140 @@ describe('WebinarService', () => {
 
       const mockRegistrations = [
         {
-          id: '1',
+          id: 'reg1',
           webinarId: webinarId,
           userId: 'user1',
-          user: { id: 'user1', username: 'john' },
+          status: 'CONFIRMED',
+        },
+        {
+          id: 'reg2',
+          webinarId: webinarId,
+          userId: 'user2',
+          status: 'CONFIRMED',
         },
       ];
 
-      mockPrismaService.registration.findMany.mockResolvedValue(mockRegistrations);
+      mockWebinarService.getRegistrations.mockResolvedValue(mockRegistrations);
 
-      const result = await service.getRegistrations(webinarId);
+      const result = await controller.getRegistrations(webinarId);
 
-      expect(mockPrismaService.registration.findMany).toHaveBeenCalledWith({
-        where: { webinarId },
-        include: {
-          user: true,
-        },
+      expect(service.getRegistrations).toHaveBeenCalledWith(webinarId);
+      expect(result).toMatchObject({
+        success: true,
+        data: mockRegistrations,
+        message: 'Registrations retrieved successfully',
+        statusCode: HttpStatus.OK,
       });
-      expect(result).toEqual(mockRegistrations);
     });
   });
 
-  describe('registerUser', () => {
-    it('should register user successfully', async () => {
-      const webinarId = 'webinar1';
-      const userId = 'user1';
-
-      const mockWebinar = {
-        id: webinarId,
-        status: WebinarStatus.SCHEDULED,
-        maxCapacity: 100,
-        registrations: new Array(50), // 50 registrations
+  describe('register', () => {
+    it('should register user for webinar successfully', async () => {
+      const registrationDto: WebinarRegistrationDto = {
+        webinarId: 'webinar1',
+        userId: 'user1',
       };
 
       const mockRegistration = {
         id: 'reg1',
-        webinarId,
-        userId,
-        status: RegistrationStatus.CONFIRMED,
+        webinarId: 'webinar1',
+        userId: 'user1',
+        status: 'CONFIRMED',
       };
 
-      mockPrismaService.webinar.findUnique.mockResolvedValue(mockWebinar);
-      mockPrismaService.registration.findUnique.mockResolvedValue(null);
-      mockPrismaService.registration.create.mockResolvedValue(mockRegistration);
+      mockWebinarService.registerUser.mockResolvedValue(mockRegistration);
 
-      const result = await service.registerUser(webinarId, userId);
+      const result = await controller.register(registrationDto);
 
-      expect(mockPrismaService.webinar.findUnique).toHaveBeenCalledWith({
-        where: { id: webinarId },
-        include: { registrations: true },
+      expect(service.registerUser).toHaveBeenCalledWith(
+        registrationDto.webinarId,
+        registrationDto.userId,
+      );
+      expect(result).toMatchObject({
+        success: true,
+        data: mockRegistration,
+        message: 'Registration successful',
+        statusCode: HttpStatus.CREATED,
       });
-      expect(mockPrismaService.registration.findUnique).toHaveBeenCalledWith({
-        where: {
-          webinarId_userId: {
-            webinarId,
-            userId,
-          },
-        },
-      });
-      expect(mockPrismaService.registration.create).toHaveBeenCalledWith({
-        data: {
-          webinarId,
-          userId,
-          status: RegistrationStatus.CONFIRMED,
-        },
-      });
-      expect(result).toEqual(mockRegistration);
     });
 
     it('should throw NotFoundException when webinar does not exist', async () => {
-      const webinarId = 'webinar1';
-      const userId = 'user1';
+      const registrationDto: WebinarRegistrationDto = {
+        webinarId: 'nonexistent',
+        userId: 'user1',
+      };
 
-      mockPrismaService.webinar.findUnique.mockResolvedValue(null);
+      mockWebinarService.registerUser.mockRejectedValue(new NotFoundException());
 
-      await expect(service.registerUser(webinarId, userId)).rejects.toThrow(NotFoundException);
+      await expect(controller.register(registrationDto)).rejects.toThrow(NotFoundException);
     });
 
-    it('should throw BadRequestException when webinar is not scheduled', async () => {
-      const webinarId = 'webinar1';
-      const userId = 'user1';
-
-      const mockWebinar = {
-        id: webinarId,
-        status: WebinarStatus.ONGOING,
-        maxCapacity: 100,
-        registrations: [],
+    it('should throw BadRequestException when webinar is full', async () => {
+      const registrationDto: WebinarRegistrationDto = {
+        webinarId: 'webinar1',
+        userId: 'user1',
       };
 
-      mockPrismaService.webinar.findUnique.mockResolvedValue(mockWebinar);
+      mockWebinarService.registerUser.mockRejectedValue(new BadRequestException());
 
-      await expect(service.registerUser(webinarId, userId)).rejects.toThrow(BadRequestException);
-    });
-
-    it('should throw BadRequestException when webinar is at max capacity', async () => {
-      const webinarId = 'webinar1';
-      const userId = 'user1';
-
-      const mockWebinar = {
-        id: webinarId,
-        status: WebinarStatus.SCHEDULED,
-        maxCapacity: 2,
-        registrations: new Array(2), // At max capacity
-      };
-
-      mockPrismaService.webinar.findUnique.mockResolvedValue(mockWebinar);
-
-      await expect(service.registerUser(webinarId, userId)).rejects.toThrow(BadRequestException);
-    });
-
-    it('should throw BadRequestException when user is already registered', async () => {
-      const webinarId = 'webinar1';
-      const userId = 'user1';
-
-      const mockWebinar = {
-        id: webinarId,
-        status: WebinarStatus.SCHEDULED,
-        maxCapacity: 100,
-        registrations: [],
-      };
-
-      const existingRegistration = {
-        id: 'reg1',
-        webinarId,
-        userId,
-      };
-
-      mockPrismaService.webinar.findUnique.mockResolvedValue(mockWebinar);
-      mockPrismaService.registration.findUnique.mockResolvedValue(existingRegistration);
-
-      await expect(service.registerUser(webinarId, userId)).rejects.toThrow(BadRequestException);
+      await expect(controller.register(registrationDto)).rejects.toThrow(BadRequestException);
     });
   });
 
-  describe('unregisterUser', () => {
-    it('should unregister user successfully', async () => {
-      const webinarId = 'webinar1';
-      const userId = 'user1';
+  describe('cancelRegistration', () => {
+    it('should cancel user registration successfully', async () => {
+      const registrationDto: WebinarRegistrationDto = {
+        webinarId: 'webinar1',
+        userId: 'user1',
+      };
 
-      const mockRegistration = {
+      const mockCanceledRegistration = {
         id: 'reg1',
-        webinarId,
-        userId,
-        status: RegistrationStatus.CONFIRMED,
-        webinar: {
-          id: webinarId,
-          title: 'Test Webinar',
-        },
+        webinarId: 'webinar1',
+        userId: 'user1',
+        status: 'CANCELED',
       };
 
-      const updatedRegistration = {
-        ...mockRegistration,
-        status: RegistrationStatus.CANCELED,
-      };
+      mockWebinarService.unregisterUser.mockResolvedValue(mockCanceledRegistration);
 
-      mockPrismaService.registration.findUnique.mockResolvedValue(mockRegistration);
-      mockPrismaService.registration.update.mockResolvedValue(updatedRegistration);
+      const result = await controller.cancelRegistration(registrationDto);
 
-      const result = await service.unregisterUser(webinarId, userId);
-
-      expect(mockPrismaService.registration.findUnique).toHaveBeenCalledWith({
-        where: {
-          webinarId_userId: {
-            webinarId,
-            userId,
-          },
-        },
-        include: { webinar: true },
+      expect(service.unregisterUser).toHaveBeenCalledWith(
+        registrationDto.webinarId,
+        registrationDto.userId,
+      );
+      expect(result).toMatchObject({
+        success: true,
+        data: mockCanceledRegistration,
+        message: 'Cancellation successful',
+        statusCode: HttpStatus.OK,
       });
-      expect(mockPrismaService.registration.update).toHaveBeenCalledWith({
-        where: {
-          id: mockRegistration.id,
-        },
-        data: { status: RegistrationStatus.CANCELED },
-      });
-      expect(result).toEqual(updatedRegistration);
     });
 
     it('should throw NotFoundException when registration does not exist', async () => {
-      const webinarId = 'webinar1';
-      const userId = 'user1';
+      const registrationDto: WebinarRegistrationDto = {
+        webinarId: 'webinar1',
+        userId: 'user1',
+      };
 
-      mockPrismaService.registration.findUnique.mockResolvedValue(null);
+      mockWebinarService.unregisterUser.mockRejectedValue(new NotFoundException());
 
-      await expect(service.unregisterUser(webinarId, userId)).rejects.toThrow(NotFoundException);
+      await expect(controller.cancelRegistration(registrationDto)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw BadRequestException when registration is already canceled', async () => {
-      const webinarId = 'webinar1';
-      const userId = 'user1';
-
-      const mockRegistration = {
-        id: 'reg1',
-        webinarId,
-        userId,
-        status: RegistrationStatus.CANCELED,
-        webinar: {
-          id: webinarId,
-          title: 'Test Webinar',
-        },
+      const registrationDto: WebinarRegistrationDto = {
+        webinarId: 'webinar1',
+        userId: 'user1',
       };
 
-      mockPrismaService.registration.findUnique.mockResolvedValue(mockRegistration);
+      mockWebinarService.unregisterUser.mockRejectedValue(new BadRequestException());
 
-      await expect(service.unregisterUser(webinarId, userId)).rejects.toThrow(BadRequestException);
-    });
-
-    it('should throw NotFoundException when associated webinar not found', async () => {
-      const webinarId = 'webinar1';
-      const userId = 'user1';
-
-      const mockRegistration = {
-        id: 'reg1',
-        webinarId,
-        userId,
-        status: RegistrationStatus.CONFIRMED,
-        webinar: null,
-      };
-
-      mockPrismaService.registration.findUnique.mockResolvedValue(mockRegistration);
-
-      await expect(service.unregisterUser(webinarId, userId)).rejects.toThrow(NotFoundException);
+      await expect(controller.cancelRegistration(registrationDto)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 });

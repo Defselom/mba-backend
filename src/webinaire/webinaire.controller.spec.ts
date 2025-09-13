@@ -12,7 +12,7 @@ import {
 } from '@/webinaire/dto/index.dto';
 import { WebinarController } from '@/webinaire/webinar.controller';
 import { WebinarService } from '@/webinaire/webinar.service';
-import { RegistrationStatus, WebinarStatus } from 'generated/prisma';
+import { RegistrationStatus, WebinarStatus } from '@/../generated/prisma';
 
 describe('WebinarController', () => {
   let controller: WebinarController;
@@ -89,14 +89,14 @@ describe('WebinarController', () => {
       const result = await controller.create(createDto);
 
       expect(mockWebinarService.create).toHaveBeenCalledWith(createDto);
-      expect(result).toEqual(
-        ResponseUtil.success(
-          createdWebinar,
-          'Webinar created successfully',
-          undefined,
-          HttpStatus.CREATED,
-        ),
-      );
+      expect(result).toMatchObject({
+        success: true,
+        data: createdWebinar,
+        message: 'Webinar created successfully',
+        meta: undefined,
+        status: HttpStatus.CREATED,
+      });
+      expect(result.timestamp).toEqual(expect.any(String));
     });
 
     it('should handle service errors', async () => {
@@ -137,7 +137,9 @@ describe('WebinarController', () => {
       const result = await controller.update(webinarId, updateDto);
 
       expect(mockWebinarService.update).toHaveBeenCalledWith(webinarId, updateDto);
-      expect(result).toEqual(ResponseUtil.success(updatedWebinar, 'Webinar updated successfully'));
+      expect(result).toMatchObject(
+        ResponseUtil.success(updatedWebinar, 'Webinar updated successfully'),
+      );
     });
 
     it('should handle service errors during update', async () => {
@@ -400,7 +402,7 @@ describe('WebinarController', () => {
         registrationDto.webinarId,
         registrationDto.userId,
       );
-      expect(result).toEqual(
+      expect(result).toMatchObject(
         ResponseUtil.success(
           mockRegistration,
           'Registration successful',
