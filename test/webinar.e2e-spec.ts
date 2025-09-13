@@ -5,7 +5,7 @@ import * as pactum from 'pactum';
 
 import { AppModule } from '@/app.module';
 import { PrismaService } from '@/prisma/prisma.service';
-import { RegistrationStatus, UserRole, UserStatus, WebinarStatus } from 'generated/prisma';
+import { RegistrationStatus, UserRole, UserStatus, WebinarStatus } from '@/../generated/prisma';
 
 describe('Webinar (e2e)', () => {
   let app: INestApplication;
