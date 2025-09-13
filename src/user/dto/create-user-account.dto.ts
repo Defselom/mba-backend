@@ -10,7 +10,7 @@ import {
   IsIn,
 } from 'class-validator';
 
-import { UserRole } from 'generated/prisma';
+import { UserRole } from '@/../generated/prisma';
 
 export class CreateUserAccountDto {
   @ApiProperty({ example: 'johndoe', maxLength: 50 })

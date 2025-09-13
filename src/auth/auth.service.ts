@@ -10,6 +10,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JsonWebTokenError, JwtService, NotBeforeError, TokenExpiredError } from '@nestjs/jwt';
 
+import { UserRole, UserStatus } from '@/../generated/prisma';
 import { TokenExpiration } from '@/auth/constants';
 import { JwtPayload, LoginDto } from '@/auth/dto';
 import { RegisterDto } from '@/auth/dto/register.dto';
@@ -18,7 +19,6 @@ import { hashPassword, verifyPassword } from '@/auth/utils/handlePassword';
 import { PrismaService } from '@/prisma/prisma.service';
 import { ApiResponse } from '@/shared/interfaces';
 import { ResponseUtil } from '@/shared/utils';
-import { UserRole, UserStatus } from 'generated/prisma';
 
 @Injectable()
 export class AuthService {

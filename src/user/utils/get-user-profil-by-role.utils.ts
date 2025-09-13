@@ -1,4 +1,4 @@
-import { UserRole } from 'generated/prisma';
+import { UserRole } from '@/../generated/prisma';
 
 /**
  * Returns the Prisma model name for a given user role.

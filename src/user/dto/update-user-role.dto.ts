@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 import { IsEnum } from 'class-validator';
 
-import { UserRole } from 'generated/prisma';
+import { UserRole } from '@/../generated/prisma';
 
 export class UpdateUserRoleDto {
   @ApiProperty({ enum: UserRole, example: UserRole.SPEAKER })

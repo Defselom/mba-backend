@@ -1,4 +1,4 @@
-import type { UserAccount } from '@/../generated/prisma';
+import type { UserAccount } from '@/../@/../generated/prisma';
 
 export class JwtPayload {
   sub: string;

@@ -37,7 +37,7 @@ import { updateUserRoleExample } from '@/user/doc/update-user-role.example';
 import { GetAllUserDto, UpdateUserDto, UpdateUserStatusDto } from '@/user/dto';
 import { UpdateUserRoleDto } from '@/user/dto/update-user-role.dto';
 import { UserService } from '@/user/user.service';
-import { UserRole } from 'generated/prisma';
+import { UserRole } from '@/../generated/prisma';
 
 @Controller('users')
 @UseGuards(JwtGuard, RolesGuard)

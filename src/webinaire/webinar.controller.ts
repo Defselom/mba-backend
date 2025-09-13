@@ -36,8 +36,7 @@ import {
   WebinarRegistrationDto,
 } from '@/webinaire/dto/index.dto';
 import { WebinarService } from '@/webinaire/webinar.service';
-import { UserRole } from 'generated/prisma'; // Adjust to your actual enum
-
+import { UserRole } from '@/../generated/prisma';
 @Controller('webinars')
 @UseGuards(JwtGuard, RolesGuard)
 @ApiBearerAuth()

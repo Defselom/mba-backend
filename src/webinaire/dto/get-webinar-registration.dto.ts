@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 import { IsDateString, IsEnum, IsObject, IsOptional, IsString } from 'class-validator';
 
-import { RegistrationStatus, type UserAccount } from 'generated/prisma';
+import { RegistrationStatus, type UserAccount } from '@/../generated/prisma';
 
 export class GetWebinarRegistrationDto {
   @ApiProperty({

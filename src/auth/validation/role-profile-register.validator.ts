@@ -4,8 +4,8 @@ import {
   ValidationArguments,
 } from 'class-validator';
 
+import { UserRole } from '@/../generated/prisma';
 import { RegisterDto } from '@/auth/dto';
-import { UserRole } from 'generated/prisma';
 
 @ValidatorConstraint({ name: 'RoleProfileRegister', async: false })
 export class RoleProfileRegisterConstraint implements ValidatorConstraintInterface {

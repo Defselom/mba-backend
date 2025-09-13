@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 
 import { PrismaService } from '@/prisma/prisma.service';
 import { AssignActorsDto, CreateWebinarDto, UpdateWebinarDto } from '@/webinaire/dto/index.dto';
-import { RegistrationStatus, WebinarStatus } from 'generated/prisma';
+import { RegistrationStatus, WebinarStatus } from '@/../generated/prisma';
 
 @Injectable()
 export class WebinarService {
@@ -13,7 +13,7 @@ export class WebinarService {
     return await this.prisma.webinar.create({
       data: {
         ...data,
-        status: 'SCHEDULED', // WebinarStatus (enum)
+        status: 'SCHEDULED',
       },
     });
   }
