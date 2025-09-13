@@ -6,7 +6,7 @@ import tseslint from 'typescript-eslint';
 import importPlugin from 'eslint-plugin-import';
 
 export default tseslint.config(
-  { ignores: ['dist/**', 'node_modules/**', 'eslint.config.mjs', ""] },
+  { ignores: ['dist/**', 'node_modules/**', 'eslint.config.mjs', ''] },
 
   // Presets JS & TS
   eslint.configs.recommended,
@@ -101,6 +101,27 @@ export default tseslint.config(
           alphabetize: { order: 'asc', caseInsensitive: true },
         },
       ],
+    },
+  },
+  {
+    files: ['**/*.spec.ts', '**/*.e2e-spec.ts', '**/*.test.ts'],
+    rules: {
+      // Allow unsafe assignments (common with mock data and test fixtures)
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      // Allow unsafe member access (testing frameworks often use dynamic properties)
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      // Allow unsafe function calls (mocks and test utilities)
+      '@typescript-eslint/no-unsafe-call': 'off',
+      // Allow unsafe returns (test helpers may return any type)
+      '@typescript-eslint/no-unsafe-return': 'off',
+      // Allow unsafe arguments (test data may not match exact types)
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      // Allow unbound methods (Jest mocks and test utilities)
+      '@typescript-eslint/unbound-method': 'off',
+      // Allow async functions without await (test setup/teardown)
+      '@typescript-eslint/require-await': 'off',
+      // Allow floating promises (test assertions and cleanup)
+      '@typescript-eslint/no-floating-promises': 'off',
     },
   },
 );
