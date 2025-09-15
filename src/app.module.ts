@@ -7,6 +7,7 @@ import { APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import { DocumentModule } from './document/document.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { SupportModule } from './support/support.module';
 import { TestimonialModule } from './testimonial/testimonial.module';
@@ -34,6 +35,7 @@ import { UserService } from '@/user/user.service';
     UploadModule,
     SupportModule,
     TestimonialModule,
+    DocumentModule,
   ],
   controllers: [AppController, UserController],
   providers: [
