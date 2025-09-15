@@ -13,9 +13,12 @@ import {
 import { WebinarController } from '@/webinaire/webinar.controller';
 import { WebinarService } from '@/webinaire/webinar.service';
 import { RegistrationStatus, WebinarStatus } from '@/../generated/prisma';
+import { timestamp } from 'rxjs';
 
 describe('WebinarController', () => {
   let controller: WebinarController;
+
+  const mockDate = new Date('2025-09-15T07:15:43.640Z');
 
   const mockWebinarService = {
     create: jest.fn(),
@@ -39,6 +42,8 @@ describe('WebinarController', () => {
   };
 
   beforeEach(async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(mockDate);
     const module: TestingModule = await Test.createTestingModule({
       controllers: [WebinarController],
       providers: [
@@ -59,6 +64,7 @@ describe('WebinarController', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+    jest.useRealTimers(); // Restore real timers after each test
   });
 
   it('should be defined', () => {
@@ -89,14 +95,14 @@ describe('WebinarController', () => {
       const result = await controller.create(createDto);
 
       expect(mockWebinarService.create).toHaveBeenCalledWith(createDto);
-      expect(result).toMatchObject({
+      expect(result).toEqual({
         success: true,
         data: createdWebinar,
         message: 'Webinar created successfully',
         meta: undefined,
         status: HttpStatus.CREATED,
+        timestamp: mockDate.toISOString(),
       });
-      expect(result.timestamp).toEqual(expect.any(String));
     });
 
     it('should handle service errors', async () => {
@@ -137,9 +143,8 @@ describe('WebinarController', () => {
       const result = await controller.update(webinarId, updateDto);
 
       expect(mockWebinarService.update).toHaveBeenCalledWith(webinarId, updateDto);
-      expect(result).toMatchObject(
-        ResponseUtil.success(updatedWebinar, 'Webinar updated successfully'),
-      );
+      expect(result).toEqual(ResponseUtil.success(updatedWebinar, 'Webinar updated successfully'));
+      expect(result.timestamp).toEqual(expect.any(String));
     });
 
     it('should handle service errors during update', async () => {
@@ -278,6 +283,7 @@ describe('WebinarController', () => {
           limit: 5,
         }),
       );
+      expect(result.timestamp).toEqual(expect.any(String));
     });
   });
 
@@ -402,7 +408,7 @@ describe('WebinarController', () => {
         registrationDto.webinarId,
         registrationDto.userId,
       );
-      expect(result).toMatchObject(
+      expect(result).toEqual(
         ResponseUtil.success(
           mockRegistration,
           'Registration successful',
