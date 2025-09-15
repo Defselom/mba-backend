@@ -8,6 +8,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { UploadModule } from './upload/upload.module';
 import { UserModule } from './user/user.module';
 import { WebinarModule } from './webinaire/webinar.module';
 import { HttpCacheInterceptor } from '@/shared/interceptors';
@@ -28,6 +29,7 @@ import { UserService } from '@/user/user.service';
       isGlobal: true,
       ttl: 50000,
     }),
+    UploadModule,
   ],
   controllers: [AppController, UserController],
   providers: [
