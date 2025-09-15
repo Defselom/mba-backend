@@ -342,7 +342,8 @@ model Support {
   title           String
   file            String
   type            SupportType
-  uploadDate      DateTime       @default(now()) @db.Timestamptz(6)
+  createdAt      DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime       @default(now()) @updatedAt @db.Timestamptz(6)
   webinarId       String?
   webinar         Webinar?       @relation(fields: [webinarId], references: [id])
   uploadedById    String?
