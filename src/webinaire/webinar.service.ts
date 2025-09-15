@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 
+import { RegistrationStatus, WebinarStatus } from '@/../generated/prisma';
 import { PrismaService } from '@/prisma/prisma.service';
 import { AssignActorsDto, CreateWebinarDto, UpdateWebinarDto } from '@/webinaire/dto/index.dto';
-import { RegistrationStatus, WebinarStatus } from '@/../generated/prisma';
 
 @Injectable()
 export class WebinarService {

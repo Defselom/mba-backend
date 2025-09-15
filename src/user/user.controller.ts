@@ -18,6 +18,7 @@ import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 import type { Request } from 'express';
 
+import { UserRole } from '@/../generated/prisma';
 import * as dto from '@/auth/dto';
 import { JwtGuard } from '@/auth/guard';
 import { RolesGuard } from '@/auth/guard';
@@ -37,7 +38,6 @@ import { updateUserRoleExample } from '@/user/doc/update-user-role.example';
 import { GetAllUserDto, UpdateUserDto, UpdateUserStatusDto } from '@/user/dto';
 import { UpdateUserRoleDto } from '@/user/dto/update-user-role.dto';
 import { UserService } from '@/user/user.service';
-import { UserRole } from '@/../generated/prisma';
 
 @Controller('users')
 @UseGuards(JwtGuard, RolesGuard)

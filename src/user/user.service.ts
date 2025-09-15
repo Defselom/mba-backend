@@ -5,12 +5,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
+import { UserRole, UserStatus } from '@/../generated/prisma';
 import { LoggedInUser, RegisterDto } from '@/auth/dto';
 import { hashPassword } from '@/auth/utils';
 import { PrismaService } from '@/prisma/prisma.service';
 import { PaginationDto } from '@/shared/dto';
 import { GetAllUserDto, UpdateUserDto } from '@/user/dto';
-import { UserRole, UserStatus } from '@/../generated/prisma';
 
 @Injectable()
 export class UserService {

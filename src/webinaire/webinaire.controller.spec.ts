@@ -1,6 +1,7 @@
 import { BadRequestException, HttpStatus, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 
+import { RegistrationStatus, WebinarStatus } from '@/../generated/prisma';
 import { JwtGuard, RolesGuard } from '@/auth/guard';
 import { ResponseUtil } from '@/shared/utils';
 import {
@@ -12,8 +13,6 @@ import {
 } from '@/webinaire/dto/index.dto';
 import { WebinarController } from '@/webinaire/webinar.controller';
 import { WebinarService } from '@/webinaire/webinar.service';
-import { RegistrationStatus, WebinarStatus } from '@/../generated/prisma';
-import { timestamp } from 'rxjs';
 
 describe('WebinarController', () => {
   let controller: WebinarController;
@@ -44,6 +43,7 @@ describe('WebinarController', () => {
   beforeEach(async () => {
     jest.useFakeTimers();
     jest.setSystemTime(mockDate);
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [WebinarController],
       providers: [
