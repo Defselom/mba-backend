@@ -9,6 +9,7 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { SupportModule } from './support/support.module';
+import { TestimonialModule } from './testimonial/testimonial.module';
 import { UploadModule } from './upload/upload.module';
 import { UserModule } from './user/user.module';
 import { WebinarModule } from './webinaire/webinar.module';
@@ -32,6 +33,7 @@ import { UserService } from '@/user/user.service';
     }),
     UploadModule,
     SupportModule,
+    TestimonialModule,
   ],
   controllers: [AppController, UserController],
   providers: [
