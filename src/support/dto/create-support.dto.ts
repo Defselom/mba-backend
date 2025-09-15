@@ -17,9 +17,7 @@ export class CreateSupportDto {
 
   @ApiProperty({
     enum: SupportType,
-    enumName: 'SupportType',
     example: SupportType.PRESENTATION,
-    type: () => String,
   })
   @IsEnum(SupportType)
   type: SupportType;

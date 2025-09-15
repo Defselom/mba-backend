@@ -136,11 +136,16 @@ export class SupportController {
     isArray: true,
   })
   async findByType(
-    @Param('type') type: SupportType,
+    @Param('type') type: string,
     @Query() query: Omit<SupportQueryDto, 'type'>,
     @Req() request: Request,
   ): Promise<IApiResponse<any[]>> {
-    const result = await this.supportService.findByType(type, query);
+    // Validate the type parameter
+    if (!Object.values(SupportType).includes(type as SupportType)) {
+      throw new Error(`Invalid support type: ${type}`);
+    }
+
+    const result = await this.supportService.findByType(type as SupportType, query);
 
     const baseUrl = generateBaseUrl(request);
 
