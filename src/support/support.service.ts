@@ -2,6 +2,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 
 import { SupportType, Prisma } from '@/../generated/prisma';
+import { LoggedInUser } from '@/auth/dto';
 import { PrismaService } from '@/prisma/prisma.service';
 import { CreateSupportDto, UpdateSupportDto } from '@/support/dto';
 import { UploadService } from '@/upload/upload.service';
@@ -45,24 +46,17 @@ export class SupportService {
   ) {}
 
   /**
-   * Crée un nouveau support
+   * Create a new support document
    */
-  async create(dto: CreateSupportDto): Promise<SupportWithPresignedUrl> {
-    // Validation des données d'entrée
-    if (!dto.title?.trim()) {
-      throw new BadRequestException('Title cannot be empty');
-    }
-
-    if (!dto.file?.trim()) {
-      throw new BadRequestException('File cannot be empty');
-    }
-
+  async create(dto: CreateSupportDto, user: LoggedInUser): Promise<SupportWithPresignedUrl> {
     try {
       const created = await this.prisma.support.create({
         data: {
-          title: dto.title.trim(),
-          file: dto.file.trim(),
+          title: dto.title,
+          file: dto.file,
           type: dto.type,
+          webinarId: dto.webinarId,
+          uploadedById: user.id,
         },
       });
 
@@ -92,11 +86,11 @@ export class SupportService {
       to,
     } = query;
 
-    // Validation des paramètres de pagination
+    // Validate pagination parameters
     const validatedPage = Math.max(1, page);
-    const validatedLimit = Math.min(100, Math.max(1, limit)); // Limite max de 100
+    const validatedLimit = Math.min(100, Math.max(1, limit)); //  Max limit at 100
 
-    // Construction des filtres avec typage Prisma
+    // Construction of the where clause
     const where: Prisma.SupportWhereInput = {};
 
     if (type) {
@@ -158,7 +152,7 @@ export class SupportService {
         this.prisma.support.count({ where }),
       ]);
 
-      // Génère des URLs présignées pour tous les fichiers
+      // Generate presigned URLs for each support file
       const data: SupportWithPresignedUrl[] = await Promise.all(
         items.map(async item => {
           const presignedUrl = await this.uploadService.getPresignedUrlFromPublicUrl(
@@ -184,7 +178,7 @@ export class SupportService {
   }
 
   /**
-   * Récupère un support par son ID
+   *  Get a support by ID
    */
   async findOne(id: string): Promise<SupportWithPresignedUrl> {
     if (!id?.trim()) {
@@ -216,29 +210,15 @@ export class SupportService {
   }
 
   /**
-   * Met à jour un support existant
+   * Update a support
    */
   async update(id: string, dto: UpdateSupportDto): Promise<SupportWithPresignedUrl> {
-    if (!id?.trim()) {
-      throw new BadRequestException('ID cannot be empty');
-    }
-
-    // Vérifie si le support existe
     const existing = await this.prisma.support.findUnique({
       where: { id },
     });
 
     if (!existing) {
       throw new NotFoundException(`Support with ID ${id} not found`);
-    }
-
-    // Validation des données optionnelles
-    if (dto.title !== undefined && !dto.title.trim()) {
-      throw new BadRequestException('Title cannot be empty');
-    }
-
-    if (dto.file !== undefined && !dto.file.trim()) {
-      throw new BadRequestException('File cannot be empty');
     }
 
     try {
@@ -274,13 +254,9 @@ export class SupportService {
   }
 
   /**
-   * Supprime un support
+   * Delete a support document
    */
   async delete(id: string): Promise<{ message: string }> {
-    if (!id?.trim()) {
-      throw new BadRequestException('ID cannot be empty');
-    }
-
     try {
       const support = await this.prisma.support.findUnique({
         where: { id },
@@ -310,28 +286,7 @@ export class SupportService {
   }
 
   /**
-   * Récupère les supports par type
-   */
-  async findByType(
-    type: SupportType,
-    query?: Omit<FindAllQuery, 'type'>,
-  ): Promise<PaginatedResponse<SupportWithPresignedUrl>> {
-    return this.findAll({ ...query, type });
-  }
-
-  /**
-   * Compte le nombre total de supports
-   */
-  async count(): Promise<number> {
-    try {
-      return await this.prisma.support.count();
-    } catch (error) {
-      throw new BadRequestException('Failed to count supports');
-    }
-  }
-
-  /**
-   * Compte les supports par type
+   * Count supports grouped by type
    */
   async countByType(): Promise<Record<SupportType, number>> {
     try {

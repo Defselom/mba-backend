@@ -15,6 +15,11 @@ export class CreateSupportDto {
   @IsNotEmpty()
   file: string;
 
+  @ApiProperty({ example: 'cmfgvpnvi0000w4sk5e0l66wm' })
+  @IsString()
+  @IsNotEmpty()
+  webinarId?: string;
+
   @ApiProperty({
     enum: SupportType,
     example: SupportType.PRESENTATION,

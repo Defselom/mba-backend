@@ -18,16 +18,13 @@ import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagg
 import type { Request } from 'express';
 
 import { UserRole, SupportType } from '@/../generated/prisma';
+import type { LoggedInUser } from '@/auth/dto';
 import { JwtGuard, RolesGuard } from '@/auth/guard';
-import { Roles } from '@/decorator';
+import { GetUser, Roles } from '@/decorator';
 import type { ApiResponse as IApiResponse } from '@/shared/interfaces';
 import { generateBaseUrl, ResponseUtil } from '@/shared/utils';
-import {
-  CreateSupportDto,
-  UpdateSupportDto,
-  GetAllSupportDto,
-  SupportQueryDto,
-} from '@/support/dto';
+import { getAllSupportDoc } from '@/support/doc';
+import { CreateSupportDto, UpdateSupportDto, SupportQueryDto } from '@/support/dto';
 import { SupportService } from '@/support/support.service';
 
 @ApiTags('Support')
@@ -45,8 +42,11 @@ export class SupportController {
     description: 'Support created successfully',
     type: CreateSupportDto,
   })
-  async create(@Body() createSupportDto: CreateSupportDto): Promise<IApiResponse<any>> {
-    const support = await this.supportService.create(createSupportDto);
+  async create(
+    @Body() createSupportDto: CreateSupportDto,
+    @GetUser() user: LoggedInUser,
+  ): Promise<IApiResponse<any>> {
+    const support = await this.supportService.create(createSupportDto, user);
 
     return ResponseUtil.success(support, 'Support created successfully');
   }
@@ -58,8 +58,7 @@ export class SupportController {
   @ApiResponse({
     status: 200,
     description: 'Supports retrieved successfully',
-    type: [GetAllSupportDto],
-    isArray: true,
+    example: getAllSupportDoc,
   })
   async findAll(
     @Query() query: SupportQueryDto,
@@ -79,20 +78,6 @@ export class SupportController {
     );
   }
 
-  @Get('types')
-  @HttpCode(HttpStatus.OK)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get all available support types' })
-  @ApiResponse({
-    status: 200,
-    description: 'Support types retrieved successfully',
-  })
-  getSupportTypes(): IApiResponse<SupportType[]> {
-    const types = Object.values(SupportType);
-
-    return ResponseUtil.success(types, 'Support types retrieved successfully');
-  }
-
   @Get('statistics')
   @Roles(UserRole.ADMIN)
   @UseGuards(RolesGuard)
@@ -107,56 +92,6 @@ export class SupportController {
     const stats = await this.supportService.countByType();
 
     return ResponseUtil.success(stats, 'Support statistics retrieved successfully');
-  }
-
-  @Get('count')
-  @Roles(UserRole.ADMIN)
-  @UseGuards(RolesGuard)
-  @HttpCode(HttpStatus.OK)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get total count of supports' })
-  @ApiResponse({
-    status: 200,
-    description: 'Support count retrieved successfully',
-  })
-  async getCount(): Promise<IApiResponse<{ count: number }>> {
-    const count = await this.supportService.count();
-
-    return ResponseUtil.success({ count }, 'Support count retrieved successfully');
-  }
-
-  @Get('type/:type')
-  @HttpCode(HttpStatus.OK)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get supports by type' })
-  @ApiResponse({
-    status: 200,
-    description: 'Supports by type retrieved successfully',
-    type: [GetAllSupportDto],
-    isArray: true,
-  })
-  async findByType(
-    @Param('type') type: string,
-    @Query() query: Omit<SupportQueryDto, 'type'>,
-    @Req() request: Request,
-  ): Promise<IApiResponse<any[]>> {
-    // Validate the type parameter
-    if (!Object.values(SupportType).includes(type as SupportType)) {
-      throw new Error(`Invalid support type: ${type}`);
-    }
-
-    const result = await this.supportService.findByType(type as SupportType, query);
-
-    const baseUrl = generateBaseUrl(request);
-
-    return ResponseUtil.paginated(
-      result.data,
-      result.total,
-      result.page,
-      result.limit,
-      `Supports of type ${type} retrieved successfully`,
-      baseUrl,
-    );
   }
 
   @Get(':id')
