@@ -92,6 +92,11 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtGuard)
   @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'User logout',
+    description: 'Logs out the user and invalidates the refresh token.',
+  })
+  @ApiResponse({ status: 200, description: 'User logged out successfully' })
   logout(@Res({ passthrough: true }) res: Response, @Req() request: Request) {
     const cookies = request.cookies as Record<string, string | undefined>;
 

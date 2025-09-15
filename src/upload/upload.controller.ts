@@ -1,7 +1,14 @@
 // src/upload/upload.controller.ts
 import { Controller, Post, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiConsumes, ApiTags, ApiBody, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiConsumes,
+  ApiTags,
+  ApiBody,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiOperation,
+} from '@nestjs/swagger';
 
 import { UploadFileDto } from './dto/upload-file.dto';
 import { UploadService } from './upload.service';
@@ -18,6 +25,11 @@ export class UploadController {
   @Post()
   @ApiBearerAuth()
   @ApiConsumes('multipart/form-data')
+  @ApiOperation({
+    summary: 'Upload a file',
+    description:
+      'Uploads a file to the storage service (like document, and image storage). Upload before creating entities that require file URLs.',
+  })
   @ApiBody({
     description: 'File to upload',
     type: UploadFileDto,
