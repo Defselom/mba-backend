@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
+import { Transform } from 'class-transformer';
 import {
   IsOptional,
   IsString,
@@ -11,6 +12,7 @@ import {
 } from 'class-validator';
 
 import { UserRole } from '@/../generated/prisma';
+import { getRawUrl, isPresignedUrl } from '@/upload/utils';
 
 export class CreateUserAccountDto {
   @ApiProperty({ example: 'johndoe', maxLength: 50 })
@@ -61,5 +63,8 @@ export class CreateUserAccountDto {
   @IsOptional()
   @IsString()
   @MaxLength(255)
+  @Transform(({ value }: { value: string | undefined }) =>
+    isPresignedUrl(value) ? getRawUrl(value) : value,
+  )
   profileImage?: string;
 }

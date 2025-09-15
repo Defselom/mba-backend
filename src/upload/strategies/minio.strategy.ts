@@ -72,11 +72,6 @@ export class MinioStrategy {
     return { key, url };
   }
 
-  /**
-   * Returns a URL to access the file.
-   * @param key the key in the bucket
-   * @param options presigned: true for a temporary URL, false for the public/raw URL
-   */
   async getUrl(
     key: string,
     options?: { presigned?: boolean; expiresIn?: number },
@@ -84,37 +79,34 @@ export class MinioStrategy {
     const { presigned = true, expiresIn = this.config.defaultExpiration } = options || {};
 
     if (presigned) {
-      // Generate a presigned URL
       return getSignedUrl(this.s3, new GetObjectCommand({ Bucket: this.bucket, Key: key }), {
         expiresIn,
       });
-    } else {
-      // Return the public URL
-      return `${this.endpoint}/${this.bucket}/${key}`;
     }
+
+    return `${this.endpoint}/${this.bucket}/${key}`;
   }
 
-  /**
-   * Detects if a URL is presigned (simple heuristic)
-   */
-  isPresignedUrl(url: string): boolean {
-    if (!url.includes('?')) return false;
-    const qs = url.split('?')[1] ?? '';
+  async getPresignedUrlFromPublicUrl(publicUrl: string): Promise<string> {
+    // Remove endpoint (assume publicUrl starts with this.endpoint+"/")
+    let urlNoEndpoint = publicUrl;
 
-    // Check S3 signature params
-    return (
-      qs.includes('X-Amz-Signature=') ||
-      qs.includes('X-Amz-Algorithm=') ||
-      qs.includes('X-Amz-Credential=')
-    );
-  }
+    if (publicUrl.startsWith(this.endpoint + '/')) {
+      urlNoEndpoint = publicUrl.substring((this.endpoint + '/').length);
+    } else if (publicUrl.startsWith(this.endpoint)) {
+      urlNoEndpoint = publicUrl.substring(this.endpoint.length);
+      if (urlNoEndpoint.startsWith('/')) urlNoEndpoint = urlNoEndpoint.substring(1);
+    }
 
-  /**
-   * If the URL is presigned, returns the raw URL without query params. Otherwise returns the URL as is.
-   */
-  getRawUrl(url: string): string {
-    if (!this.isPresignedUrl(url)) return url;
+    const [bucket, ...keyParts] = urlNoEndpoint.split('/');
+    const key = keyParts.join('/');
 
-    return url.split('?')[0];
+    // if the bucket from the URL does not match the configured bucket, return the original URL
+    if (this.bucket && bucket !== this.bucket) {
+      // Mauvais bucket, retourne l’URL brute
+      return publicUrl;
+    }
+
+    return this.getUrl(key, { presigned: true });
   }
 }

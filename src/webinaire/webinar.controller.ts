@@ -203,6 +203,6 @@ export class WebinarController {
   ): Promise<IApiResponse<WebinarRegistrationDto>> {
     const registration = await this.webinarService.unregisterUser(dto.webinarId, dto.userId);
 
-    return ResponseUtil.success(registration, 'Cancellation successful');
+    return ResponseUtil.success(registration, 'Cancellation successful', undefined, HttpStatus.OK);
   }
 }
