@@ -10,11 +10,15 @@ import { LoggedInUser, RegisterDto } from '@/auth/dto';
 import { hashPassword } from '@/auth/utils';
 import { PrismaService } from '@/prisma/prisma.service';
 import { PaginationDto } from '@/shared/dto';
+import { UploadService } from '@/upload/upload.service';
 import { GetAllUserDto, UpdateUserDto } from '@/user/dto';
 
 @Injectable()
 export class UserService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private uploadService: UploadService,
+  ) {}
 
   async create(dto: RegisterDto): Promise<LoggedInUser> {
     // 1. Check if user exists
@@ -93,7 +97,13 @@ export class UserService {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password: _, ...result } = user;
 
-    return user;
+    const userImgUrl = await this.uploadService.getPresignedUrlFromPublicUrl(
+      user?.profileImage ?? '',
+    );
+
+    const userWithImgUrl = { ...result, profileImage: userImgUrl };
+
+    return userWithImgUrl;
   }
 
   async findAll(paginationDto: PaginationDto): Promise<{ data: GetAllUserDto[]; total: number }> {

@@ -99,7 +99,9 @@ export class MinioStrategy {
     }
 
     const [bucket, ...keyParts] = urlNoEndpoint.split('/');
-    const key = keyParts.join('/');
+    let key = keyParts.join('/');
+
+    key = decodeURIComponent(key);
 
     // if the bucket from the URL does not match the configured bucket, return the original URL
     if (this.bucket && bucket !== this.bucket) {

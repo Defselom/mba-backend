@@ -1,19 +1,22 @@
 // src/upload/upload.controller.ts
-import { Controller, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Controller, Post, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiConsumes, ApiTags, ApiBody, ApiResponse } from '@nestjs/swagger';
+import { ApiConsumes, ApiTags, ApiBody, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 
 import { UploadFileDto } from './dto/upload-file.dto';
 import { UploadService } from './upload.service';
+import { JwtGuard } from '@/auth/guard';
 import type { MulterFile } from '@/upload/strategies/minio.strategy';
 import { getUploadFolder } from '@/upload/utils';
 
 @ApiTags('upload')
 @Controller('upload')
+@UseGuards(JwtGuard)
 export class UploadController {
   constructor(private readonly uploadService: UploadService) {}
 
   @Post()
+  @ApiBearerAuth()
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     description: 'File to upload',
