@@ -50,6 +50,18 @@ export class SupportService {
    */
   async create(dto: CreateSupportDto, user: LoggedInUser): Promise<SupportWithPresignedUrl> {
     try {
+      // find if webinar exists if webinarId is provided
+      if (dto.webinarId) {
+        const webinar = await this.prisma.webinar.findUnique({
+          where: { id: dto.webinarId },
+          select: { id: true },
+        });
+
+        if (!webinar) {
+          throw new BadRequestException(`Webinar with ID ${dto.webinarId} does not exist`);
+        }
+      }
+
       const created = await this.prisma.support.create({
         data: {
           title: dto.title,
@@ -67,7 +79,9 @@ export class SupportService {
 
       return { ...created, file: presignedUrl };
     } catch (error: unknown) {
-      throw new BadRequestException('Failed to create support');
+      console.log(error);
+
+      throw new BadRequestException((error as Error)?.message || 'Failed to create support');
     }
   }
 
