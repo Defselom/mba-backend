@@ -34,6 +34,24 @@ export class WebinarService {
     });
   }
 
+  // get specific webinar by id
+  async findOne(id: string) {
+    const webinar = await this.prisma.webinar.findUnique({
+      where: { id },
+      include: {
+        animatedBy: true,
+        moderatedBy: true,
+        collaborators: true,
+        registrations: true,
+        supports: true,
+      },
+    });
+
+    if (!webinar) throw new NotFoundException('Webinar not found');
+
+    return webinar;
+  }
+
   // Handle webinar status (start, end, cancel)
   async handleStatus(id: string, status: WebinarStatus) {
     const webinar = await this.prisma.webinar.findUnique({ where: { id } });
@@ -191,5 +209,17 @@ export class WebinarService {
       },
       data: { status: RegistrationStatus.CANCELED },
     });
+  }
+
+  // Get webinar support files
+  async getWebinarSupports(webinarId: string) {
+    const webinar = await this.prisma.webinar.findUnique({
+      where: { id: webinarId },
+      include: { supports: true },
+    });
+
+    if (!webinar) throw new NotFoundException('Webinar not found');
+
+    return webinar.supports;
   }
 }

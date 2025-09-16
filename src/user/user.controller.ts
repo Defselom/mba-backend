@@ -40,13 +40,13 @@ import { UpdateUserRoleDto } from '@/user/dto/update-user-role.dto';
 import { UserService } from '@/user/user.service';
 
 @Controller('users')
+@ApiBearerAuth()
 @UseGuards(JwtGuard, RolesGuard)
 export class UserController {
   constructor(private userService: UserService) {}
 
   @Get('me')
   @HttpCode(HttpStatus.OK)
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current user information' })
   @ApiResponse({ status: 200, description: 'Connected user', example: getUserMeExample })
   getMe(@GetUser('') user: dto.LoggedInUser): { user: dto.LoggedInUser } {
@@ -56,7 +56,6 @@ export class UserController {
   @Post('')
   @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.CREATED)
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Add a new user' })
   @ApiResponse({
     status: 201,
@@ -73,7 +72,6 @@ export class UserController {
   @Roles(UserRole.ADMIN)
   @UseGuards(JwtGuard)
   @HttpCode(HttpStatus.OK)
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get all users' })
   @ApiResponse({
     status: 200,
@@ -167,7 +165,6 @@ export class UserController {
 
   @Get(':id/registrations')
   @HttpCode(HttpStatus.OK)
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get user registrations' })
   @ApiResponse({ status: 200, description: 'User registrations retrieved successfully' })
   async getUserRegistrations(@Param('id') id: string): Promise<IApiResponse<any>> {

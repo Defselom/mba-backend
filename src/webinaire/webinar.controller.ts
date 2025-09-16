@@ -205,4 +205,43 @@ export class WebinarController {
 
     return ResponseUtil.success(registration, 'Cancellation successful', undefined, HttpStatus.OK);
   }
+
+  // [USER] Get webinar supports (documents, links, etc.)
+  @Get(':id/supports')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get webinar supports' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of webinar supports',
+  })
+  async getWebinarSupports(@Param('id') id: string) {
+    const supports = await this.webinarService.getWebinarSupports(id);
+
+    return ResponseUtil.success(
+      supports,
+      'Webinar supports retrieved successfully',
+      undefined,
+      HttpStatus.OK,
+    );
+  }
+
+  // [USER] Get webinar details by ID (including if user is registered)
+  @Get(':id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get webinar details by ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Webinar details retrieved successfully',
+    type: WebinarDto,
+  })
+  async getWebinarDetails(@Param('id') id: string) {
+    const webinar = await this.webinarService.findOne(id);
+
+    return ResponseUtil.success(
+      webinar,
+      'Webinar details retrieved successfully',
+      undefined,
+      HttpStatus.OK,
+    );
+  }
 }
