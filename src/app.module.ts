@@ -17,6 +17,7 @@ import { WebinarModule } from './webinaire/webinar.module';
 import { HttpCacheInterceptor } from '@/shared/interceptors';
 import { UserController } from '@/user/user.controller';
 import { UserService } from '@/user/user.service';
+import { PartnerApplicationsModule } from './partner-applications/partner-applications.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { UserService } from '@/user/user.service';
     SupportModule,
     TestimonialModule,
     DocumentModule,
+    PartnerApplicationsModule,
   ],
   controllers: [AppController, UserController],
   providers: [
