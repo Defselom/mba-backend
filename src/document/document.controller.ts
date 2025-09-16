@@ -76,7 +76,7 @@ export class DocumentController {
 
   @Post()
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Create a new legal document (Admin only)' })
+  @ApiOperation({ summary: 'Create a new legal document ' })
   @ApiResponse({
     status: 201,
     description: 'Document created successfully',
@@ -90,7 +90,7 @@ export class DocumentController {
 
   @Patch(':id')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Update an existing legal document (Admin only)' })
+  @ApiOperation({ summary: 'Update an existing legal document ' })
   @ApiResponse({
     status: 200,
     description: 'Document updated successfully',
@@ -104,7 +104,7 @@ export class DocumentController {
 
   @Delete(':id')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Delete a legal document (Admin only)' })
+  @ApiOperation({ summary: 'Delete a legal document ' })
   @ApiResponse({
     status: 200,
     description: 'Document deleted successfully',
