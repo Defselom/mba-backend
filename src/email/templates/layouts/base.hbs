@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+    {{> head}}
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div class="email-header">
+            <a href="{{url '/'}}" class="logo">MBA</a>
+            <div class="tagline">Master Business Accelerator</div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="email-content">
+            {{{body}}}
+        </div>
+        
+        <!-- Footer -->
+        {{> footer}}
+    </div>
+</body>
+</html>
