@@ -8,6 +8,7 @@ import {
 import { UserRole, UserStatus } from '@/../generated/prisma';
 import { LoggedInUser, RegisterDto } from '@/auth/dto';
 import { hashPassword } from '@/auth/utils';
+import { EmailService } from '@/email/email.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import { PaginationDto } from '@/shared/dto';
 import { UploadService } from '@/upload/upload.service';
@@ -18,6 +19,7 @@ export class UserService {
   constructor(
     private prisma: PrismaService,
     private uploadService: UploadService,
+    private emailService: EmailService,
   ) {}
 
   async create(dto: RegisterDto): Promise<LoggedInUser> {
@@ -103,6 +105,14 @@ export class UserService {
 
     const userWithImgUrl = { ...result, profileImage: userImgUrl };
 
+    // send credentials email
+    await this.emailService.sendCredentialsEmail({
+      to: user.email,
+      email: user.email,
+      username: user.username,
+      password: dto.password ?? '',
+    });
+
     return userWithImgUrl;
   }
 
@@ -160,7 +170,6 @@ export class UserService {
         moderatorProfile: true,
         collaboratorProfile: true,
         participantProfile: true,
-        partnerProfile: true,
       },
     });
   }
