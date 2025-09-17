@@ -150,4 +150,37 @@ export class EmailService {
       },
     });
   }
+
+  async sendAccountValidationEmail({
+    to,
+    userName,
+    isApproved,
+    rejectionReason,
+    additionalNotes,
+    canReapply = true,
+  }: {
+    to: string;
+    userName: string;
+    isApproved: boolean;
+    rejectionReason?: string;
+    additionalNotes?: string;
+    canReapply?: boolean;
+  }): Promise<void> {
+    const subject = isApproved
+      ? 'Votre compte MBA a été approuvé !'
+      : 'Mise à jour de votre demande de compte MBA';
+
+    await this.sendTemplatedEmail({
+      to,
+      subject,
+      template: 'account-validation',
+      context: {
+        userName,
+        isApproved,
+        rejectionReason: rejectionReason || 'Informations incomplètes ou incorrectes.',
+        additionalNotes,
+        canReapply,
+      },
+    });
+  }
 }

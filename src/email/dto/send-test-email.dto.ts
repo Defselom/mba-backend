@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-import { IsEmail, IsOptional, IsString, IsNotEmpty } from 'class-validator';
+import { IsBoolean, IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class SendTestEmailDto {
   @IsEmail()
@@ -117,4 +117,35 @@ export class SendCredentialsEmailDto {
   @IsString()
   @IsNotEmpty()
   password: string;
+}
+
+export class SendAccountValidationEmailDto {
+  @IsEmail()
+  @IsNotEmpty()
+  @ApiProperty()
+  to: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty()
+  userName: string;
+
+  @IsBoolean()
+  @ApiProperty()
+  isApproved: boolean;
+
+  @IsString()
+  @IsOptional()
+  @ApiProperty()
+  rejectionReason?: string;
+
+  @IsString()
+  @IsOptional()
+  @ApiProperty()
+  additionalNotes?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  @ApiProperty()
+  canReapply?: boolean;
 }

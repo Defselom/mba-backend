@@ -2,14 +2,16 @@ import { Body, Controller, Post, Get, HttpStatus, HttpCode } from '@nestjs/commo
 import { ConfigService } from '@nestjs/config';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 
-import { EmailConfig } from '@/email/config/email.config';
 import {
-  SendTestEmailDto,
-  SendWelcomeEmailDto,
-  SendPasswordResetEmailDto,
+  SendAccountValidationEmailDto,
+  SendCredentialsEmailDto,
   SendNotificationEmailDto,
+  SendPasswordResetEmailDto,
+  SendTestEmailDto,
   SendTemplatedEmailDto,
-} from '@/email/dto/send-test-email.dto';
+  SendWelcomeEmailDto,
+} from './dto/send-test-email.dto';
+import { EmailConfig } from '@/email/config/email.config';
 import { EmailService } from '@/email/email.service';
 
 interface TestResult {
@@ -293,5 +295,76 @@ export class EmailTestController {
         },
       },
     };
+  }
+
+  @Post('send-credentials')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Envoyer les identifiants de connexion par email' })
+  @ApiResponse({ status: 200, description: 'Email des identifiants envoyé avec succès' })
+  @ApiResponse({ status: 400, description: 'Données invalides' })
+  @ApiResponse({ status: 500, description: "Erreur lors de l'envoi de l'email" })
+  @ApiBody({ type: SendCredentialsEmailDto })
+  async sendCredentialsEmail(@Body() sendCredentialsEmailDto: SendCredentialsEmailDto) {
+    try {
+      await this.emailService.sendCredentialsEmail({
+        to: sendCredentialsEmailDto.to,
+        email: sendCredentialsEmailDto.email,
+        username: sendCredentialsEmailDto.username,
+        password: sendCredentialsEmailDto.password,
+      });
+
+      return {
+        success: true,
+        message: 'Email des identifiants envoyé avec succès',
+        data: {
+          to: sendCredentialsEmailDto.to,
+          userName: sendCredentialsEmailDto.userName,
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: "Erreur lors de l'envoi de l'email des identifiants",
+        error: error instanceof Error ? error.message : 'Erreur inconnue',
+      };
+    }
+  }
+
+  @Post('send-account-validation')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Envoyer une notification de validation de compte' })
+  @ApiResponse({ status: 200, description: 'Email de validation de compte envoyé avec succès' })
+  @ApiResponse({ status: 400, description: 'Données invalides' })
+  @ApiResponse({ status: 500, description: "Erreur lors de l'envoi de l'email" })
+  @ApiBody({ type: SendAccountValidationEmailDto })
+  async sendAccountValidationEmail(
+    @Body() sendAccountValidationEmailDto: SendAccountValidationEmailDto,
+  ) {
+    try {
+      await this.emailService.sendAccountValidationEmail({
+        to: sendAccountValidationEmailDto.to,
+        userName: sendAccountValidationEmailDto.userName,
+        isApproved: sendAccountValidationEmailDto.isApproved,
+        rejectionReason: sendAccountValidationEmailDto.rejectionReason,
+        additionalNotes: sendAccountValidationEmailDto.additionalNotes,
+        canReapply: sendAccountValidationEmailDto.canReapply,
+      });
+
+      return {
+        success: true,
+        message: 'Email de validation de compte envoyé avec succès',
+        data: {
+          to: sendAccountValidationEmailDto.to,
+          userName: sendAccountValidationEmailDto.userName,
+          isApproved: sendAccountValidationEmailDto.isApproved,
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: "Erreur lors de l'envoi de l'email de validation de compte",
+        error: error instanceof Error ? error.message : 'Erreur inconnue',
+      };
+    }
   }
 }
