@@ -8,6 +8,9 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { DocumentModule } from './document/document.module';
+import { EmailTestModule } from './email/email-test.module';
+import { EmailModule } from './email/email.module';
+import { PartnerApplicationsModule } from './partner-applications/partner-applications.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { SupportModule } from './support/support.module';
 import { TestimonialModule } from './testimonial/testimonial.module';
@@ -17,7 +20,6 @@ import { WebinarModule } from './webinaire/webinar.module';
 import { HttpCacheInterceptor } from '@/shared/interceptors';
 import { UserController } from '@/user/user.controller';
 import { UserService } from '@/user/user.service';
-import { PartnerApplicationsModule } from './partner-applications/partner-applications.module';
 
 @Module({
   imports: [
@@ -38,6 +40,8 @@ import { PartnerApplicationsModule } from './partner-applications/partner-applic
     TestimonialModule,
     DocumentModule,
     PartnerApplicationsModule,
+    EmailModule,
+    EmailTestModule,
   ],
   controllers: [AppController, UserController],
   providers: [
