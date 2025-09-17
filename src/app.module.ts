@@ -41,7 +41,7 @@ import { UserService } from '@/user/user.service';
     DocumentModule,
     PartnerApplicationsModule,
     EmailModule,
-    EmailTestModule,
+    ...(process.env.NODE_ENV === 'development' ? [EmailTestModule] : []),
   ],
   controllers: [AppController, UserController],
   providers: [
