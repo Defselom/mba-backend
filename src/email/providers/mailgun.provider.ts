@@ -28,7 +28,7 @@ export class MailgunProvider implements EmailProvider {
   constructor(opts: { apiKey: string; domain: string; baseUrl?: string }) {
     // Utiliser l'URL par défaut si baseUrl n'est pas fournie
     const baseUrl = opts.baseUrl || 'https://api.mailgun.net';
-    
+
     console.log('Mailgun configuration:', {
       domain: opts.domain,
       baseUrl,
@@ -36,10 +36,9 @@ export class MailgunProvider implements EmailProvider {
     });
 
     // Solution 1: Use proper constructor without any casting
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+
     const mailgun = new Mailgun(formData);
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     this.client = mailgun.client({
       username: 'api',
       key: opts.apiKey,

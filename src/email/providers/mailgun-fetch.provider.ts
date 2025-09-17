@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import type { EmailProvider } from '@/email/providers/mail.provider';
 
 export class MailgunFetchProvider implements EmailProvider {
