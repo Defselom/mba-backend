@@ -23,7 +23,7 @@
 {{else}}
     <p>Nous regrettons de vous informer que votre demande de compte MBA n'a pas pu être approuvée à ce stade.</p>
     
-    {{> alert type="warning" title="⚠️ Raison du refus" message="{{rejectionReason}}"}}
+    {{> alert type="warning" title="⚠️ Raison du refus" message=rejectionReason}}
     
     <h2>Que faire maintenant ?</h2>
     <ul>
@@ -43,7 +43,7 @@
 {{/if}}
 
 {{#if additionalNotes}}
-    {{> alert type="info" title="📝 Note complémentaire" message="{{additionalNotes}}"}}
+    {{> alert type="info" title="📝 Note complémentaire" message=additionalNotes}}
 {{/if}}
 
 {{#if isApproved}}

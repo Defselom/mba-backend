@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 
 import {
+  SendAccountStatusEmailDto,
   SendAccountValidationEmailDto,
   SendCredentialsEmailDto,
   SendNotificationEmailDto,
@@ -363,6 +364,43 @@ export class EmailTestController {
       return {
         success: false,
         message: "Erreur lors de l'envoi de l'email de validation de compte",
+        error: error instanceof Error ? error.message : 'Erreur inconnue',
+      };
+    }
+  }
+
+  @Post('send-account-status')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Envoyer une notification de statut de compte (activé/désactivé)' })
+  @ApiResponse({ status: 200, description: 'Email de statut de compte envoyé avec succès' })
+  @ApiResponse({ status: 400, description: 'Données invalides' })
+  @ApiResponse({ status: 500, description: "Erreur lors de l'envoi de l'email" })
+  @ApiBody({ type: SendAccountStatusEmailDto })
+  async sendAccountStatusEmail(@Body() sendAccountStatusEmailDto: SendAccountStatusEmailDto) {
+    try {
+      await this.emailService.sendAccountStatusEmail({
+        to: sendAccountStatusEmailDto.to,
+        userName: sendAccountStatusEmailDto.userName,
+        isActive: sendAccountStatusEmailDto.isActive,
+        reason: sendAccountStatusEmailDto.reason,
+        additionalNotes: sendAccountStatusEmailDto.additionalNotes,
+        canReactivate: sendAccountStatusEmailDto.canReactivate,
+        canContact: sendAccountStatusEmailDto.canContact,
+      });
+
+      return {
+        success: true,
+        message: 'Email de statut de compte envoyé avec succès',
+        data: {
+          to: sendAccountStatusEmailDto.to,
+          userName: sendAccountStatusEmailDto.userName,
+          isActive: sendAccountStatusEmailDto.isActive,
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: "Erreur lors de l'envoi de l'email de statut de compte",
         error: error instanceof Error ? error.message : 'Erreur inconnue',
       };
     }

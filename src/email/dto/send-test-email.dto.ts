@@ -149,3 +149,39 @@ export class SendAccountValidationEmailDto {
   @ApiProperty()
   canReapply?: boolean;
 }
+
+export class SendAccountStatusEmailDto {
+  @IsEmail()
+  @IsNotEmpty()
+  @ApiProperty()
+  to: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty()
+  userName: string;
+
+  @IsBoolean()
+  @ApiProperty()
+  isActive: boolean;
+
+  @IsString()
+  @IsOptional()
+  @ApiProperty()
+  reason?: string;
+
+  @IsString()
+  @IsOptional()
+  @ApiProperty()
+  additionalNotes?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  @ApiProperty()
+  canReactivate?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  @ApiProperty()
+  canContact?: boolean;
+}

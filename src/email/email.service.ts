@@ -183,4 +183,40 @@ export class EmailService {
       },
     });
   }
+
+  async sendAccountStatusEmail({
+    to,
+    userName,
+    isActive,
+    reason,
+    additionalNotes,
+    canReactivate = true,
+    canContact = true,
+  }: {
+    to: string;
+    userName: string;
+    isActive: boolean;
+    reason?: string;
+    additionalNotes?: string;
+    canReactivate?: boolean;
+    canContact?: boolean;
+  }): Promise<void> {
+    const subject = isActive
+      ? 'Votre compte MBA a été activé !'
+      : 'Votre compte MBA a été désactivé';
+
+    await this.sendTemplatedEmail({
+      to,
+      subject,
+      template: 'account-status',
+      context: {
+        userName,
+        isActive,
+        reason,
+        additionalNotes,
+        canReactivate,
+        canContact,
+      },
+    });
+  }
 }
