@@ -21,7 +21,7 @@ import { UAParser } from 'ua-parser-js';
 
 import { AuthService } from '@/auth/auth.service';
 import { loginExample, refreshTokenExample, RegisterExample } from '@/auth/doc';
-import { LoginDto, RefreshUserTokenDto, RegisterDto } from '@/auth/dto';
+import { ForgotPasswordDto, LoginDto, RefreshUserTokenDto, RegisterDto } from '@/auth/dto';
 import { JwtGuard } from '@/auth/guard';
 import { MetaData } from '@/auth/interface';
 import { clearAuthCookies, setAuthCookies } from '@/auth/utils';
@@ -171,5 +171,22 @@ export class AuthController {
         refresh_token: undefined,
       },
     };
+  }
+
+  // request password reset: generate a token, email and always respond 202
+  @Post('forgot-password')
+  @HttpCode(202)
+  @ApiOperation({
+    summary: 'Request password reset',
+    description:
+      'Initiates the password reset process by generating a reset token and sending it via email. Always responds with 202 to prevent email enumeration.',
+  })
+  @ApiResponse({
+    status: 202,
+    description:
+      'If the email exists, a password reset link has been sent. Please check your email.',
+  })
+  async forgotPassword(@Body() dto: ForgotPasswordDto): Promise<void> {
+    await this.authService.requestPasswordReset(dto.email);
   }
 }

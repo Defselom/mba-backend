@@ -11,11 +11,13 @@ import { ConfigService } from '@nestjs/config';
 import { JsonWebTokenError, JwtService, NotBeforeError, TokenExpiredError } from '@nestjs/jwt';
 
 import { UserRole, UserStatus } from '@/../generated/prisma';
-import { TokenExpiration } from '@/auth/constants';
+import { PasswordResetTokenExpiration, TokenExpiration } from '@/auth/constants';
 import { JwtPayload, LoginDto } from '@/auth/dto';
 import { RegisterDto } from '@/auth/dto/register.dto';
 import { MetaData, authResponse } from '@/auth/interface';
+import { generateResetToken } from '@/auth/utils';
 import { hashPassword, verifyPassword } from '@/auth/utils/handlePassword';
+import { EmailService } from '@/email/email.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import { ApiResponse } from '@/shared/interfaces';
 import { ResponseUtil } from '@/shared/utils';
@@ -26,6 +28,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private config: ConfigService,
+    private mailService: EmailService,
   ) {}
 
   private async generateTokens(
@@ -284,5 +287,36 @@ export class AuthService {
 
       throw new UnauthorizedException('Invalid refresh token');
     }
+  }
+
+  // request password reset: generate a token, email and always respond 202
+  async requestPasswordReset(email: string): Promise<void> {
+    const user = await this.prisma.userAccount.findUnique({ where: { email } });
+
+    if (user) {
+      // Generate token and its hash
+      const { tokenPlain, tokenHash } = generateResetToken();
+
+      // Save hashed token to DB with expiration (1 hour)
+      await this.prisma.passwordResetToken.create({
+        data: {
+          userId: user.id,
+          token: tokenHash,
+          expiresAt: new Date(Date.now() + PasswordResetTokenExpiration.RESET_DURATION), // 30 minutes
+        },
+      });
+
+      // Send email with plain token
+      try {
+        await this.mailService.sendPasswordResetEmail(user.email, tokenPlain);
+      } catch (error) {
+        console.error('Error sending password reset email:', error);
+
+        // Optionally, you might want to clear the token if email fails
+      }
+    }
+
+    // Always respond with 202 to prevent email enumeration
+    return;
   }
 }
