@@ -15,7 +15,7 @@ import { PasswordResetTokenExpiration, TokenExpiration } from '@/auth/constants'
 import { JwtPayload, LoginDto } from '@/auth/dto';
 import { RegisterDto } from '@/auth/dto/register.dto';
 import { MetaData, authResponse } from '@/auth/interface';
-import { generateResetToken } from '@/auth/utils';
+import { generateResetToken, hashResetToken } from '@/auth/utils';
 import { hashPassword, verifyPassword } from '@/auth/utils/handlePassword';
 import { EmailService } from '@/email/email.service';
 import { PrismaService } from '@/prisma/prisma.service';
@@ -318,5 +318,25 @@ export class AuthService {
 
     // Always respond with 202 to prevent email enumeration
     return;
+  }
+
+  // valid reset token
+  async validateResetToken(token: string): Promise<void> {
+    const tokenHash = hashResetToken(token);
+
+    const resetToken = await this.prisma.passwordResetToken.findFirst({
+      where: { token: tokenHash },
+    });
+
+    if (!resetToken) {
+      throw new NotFoundException('Password reset token not found');
+    }
+
+    if (resetToken.expiresAt < new Date()) {
+      throw new BadRequestException('Invalid or expired password reset token');
+    }
+
+    if (resetToken.used)
+      throw new BadRequestException('This password reset token has already been used');
   }
 }

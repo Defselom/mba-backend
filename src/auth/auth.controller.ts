@@ -9,6 +9,8 @@ import {
   UnauthorizedException,
   Headers,
   UseGuards,
+  Get,
+  Param,
 } from '@nestjs/common';
 
 import { ConfigService } from '@nestjs/config';
@@ -188,5 +190,42 @@ export class AuthController {
   })
   async forgotPassword(@Body() dto: ForgotPasswordDto): Promise<void> {
     await this.authService.requestPasswordReset(dto.email);
+  }
+
+  // valid reset token
+  @Get('password/reset/:token/validate')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Validate password reset token',
+    description: 'Checks if the provided password reset token is valid and not expired.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Password reset token is valid',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Password reset token is invalid, expired, or already used',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: 'Invalid or expired password reset token',
+        error: 'Bad Request',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Password reset token not found',
+    schema: {
+      example: {
+        statusCode: 404,
+        message: 'Password reset token not found',
+        error: 'Not Found',
+      },
+    },
+  })
+  async validateResetToken(@Param('token') token: string): Promise<void> {
+    await this.authService.validateResetToken(token);
   }
 }
