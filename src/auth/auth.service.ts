@@ -380,6 +380,13 @@ export class AuthService {
       }),
     ]);
 
+    // Notify user of password change
+    await this.mailService.sendPasswordChangedEmail({
+      to: user.email,
+      userName: user.firstName || user.username,
+      changeDate: new Date(),
+    });
+
     return;
   }
 
@@ -412,6 +419,13 @@ export class AuthService {
     await this.prisma.userAccount.update({
       where: { id: user.id },
       data: { password: hashedNewPassword },
+    });
+
+    // Notify user of password change
+    await this.mailService.sendPasswordChangedEmail({
+      to: user.email,
+      userName: user.firstName || user.username,
+      changeDate: new Date(),
     });
 
     return;
