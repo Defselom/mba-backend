@@ -312,10 +312,7 @@ export class AuthController {
       },
     },
   })
-  async changePassword(
-    @Body() dto: { oldPassword: string; newPassword: string },
-    @GetUser() user: dto_1.LoggedInUser,
-  ) {
+  async changePassword(@Body() dto: dto_1.ChangePasswordDto, @GetUser() user: dto_1.LoggedInUser) {
     await this.authService.changePassword(user.id, dto.oldPassword, dto.newPassword);
 
     return ResponseUtil.success(
