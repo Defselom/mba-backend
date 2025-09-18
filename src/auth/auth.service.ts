@@ -329,7 +329,7 @@ export class AuthService {
     });
 
     if (!resetToken) {
-      throw new NotFoundException('Password reset token not found');
+      throw new NotFoundException('Password reset token not valid');
     }
 
     if (resetToken.expiresAt < new Date()) {
@@ -349,7 +349,7 @@ export class AuthService {
     });
 
     if (!resetToken) {
-      throw new NotFoundException('Password reset token not found');
+      throw new NotFoundException('Password reset token not valid');
     }
 
     if (resetToken.expiresAt < new Date()) {
@@ -395,6 +395,10 @@ export class AuthService {
 
     if (!user.password) {
       throw new BadRequestException('User does not have a password set');
+    }
+
+    if (oldPassword === newPassword) {
+      throw new BadRequestException('New password must be different from old password');
     }
 
     const isOldPasswordValid = await verifyPassword(oldPassword, user.password);
