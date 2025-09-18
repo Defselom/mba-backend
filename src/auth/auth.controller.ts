@@ -312,6 +312,17 @@ export class AuthController {
       },
     },
   })
+  @ApiResponse({
+    status: 400,
+    description: 'New password must be different from the old password',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: 'New password must be different from the old password',
+        error: 'Bad Request',
+      },
+    },
+  })
   async changePassword(@Body() dto: dto_1.ChangePasswordDto, @GetUser() user: dto_1.LoggedInUser) {
     await this.authService.changePassword(user.id, dto.oldPassword, dto.newPassword);
 
