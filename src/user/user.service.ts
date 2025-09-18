@@ -7,7 +7,7 @@ import {
 
 import { UserRole, UserStatus } from '@/../generated/prisma';
 import { LoggedInUser, RegisterDto } from '@/auth/dto';
-import { hashPassword } from '@/auth/utils';
+import { generateRandomPassword, hashPassword } from '@/auth/utils';
 import { EmailService } from '@/email/email.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import { PaginationDto } from '@/shared/dto';
@@ -35,7 +35,8 @@ export class UserService {
     }
 
     // 2. Hash password
-    const hashedPassword = dto.password ? await hashPassword(dto.password) : undefined;
+    const generatedPassword = generateRandomPassword(12);
+    const hashedPassword = await hashPassword(generatedPassword);
 
     // 3. Create UserAccount
     const user = await this.prisma.userAccount.create({
@@ -110,7 +111,7 @@ export class UserService {
       to: user.email,
       email: user.email,
       username: user.username,
-      password: dto.password ?? '',
+      password: generatedPassword,
     });
 
     return userWithImgUrl;
