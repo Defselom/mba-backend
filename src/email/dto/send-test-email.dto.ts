@@ -185,3 +185,19 @@ export class SendAccountStatusEmailDto {
   @ApiProperty()
   canContact?: boolean;
 }
+
+export class SendPasswordChangedEmailDto {
+  @IsEmail()
+  @IsNotEmpty()
+  @ApiProperty({ example: 'user@example.com' })
+  to: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty({ example: 'John Doe' })
+  userName: string;
+
+  @IsOptional()
+  @ApiProperty({ example: new Date() })
+  changeDate?: Date;
+}

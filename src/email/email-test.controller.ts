@@ -7,6 +7,7 @@ import {
   SendAccountValidationEmailDto,
   SendCredentialsEmailDto,
   SendNotificationEmailDto,
+  SendPasswordChangedEmailDto,
   SendPasswordResetEmailDto,
   SendTestEmailDto,
   SendTemplatedEmailDto,
@@ -401,6 +402,49 @@ export class EmailTestController {
       return {
         success: false,
         message: "Erreur lors de l'envoi de l'email de statut de compte",
+        error: error instanceof Error ? error.message : 'Erreur inconnue',
+      };
+    }
+  }
+
+  @Post('send-password-changed')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Envoyer une notification de modification de mot de passe' })
+  @ApiResponse({
+    status: 200,
+    description: 'Email de modification de mot de passe envoyé avec succès',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Données invalides',
+  })
+  @ApiResponse({
+    status: 500,
+    description: "Erreur lors de l'envoi de l'email",
+  })
+  @ApiBody({ type: SendPasswordChangedEmailDto })
+  async sendPasswordChangedEmail(@Body() sendPasswordChangedEmailDto: SendPasswordChangedEmailDto) {
+    try {
+      await this.emailService.sendPasswordChangedEmail({
+        to: sendPasswordChangedEmailDto.to,
+        userName: sendPasswordChangedEmailDto.userName,
+        changeDate: sendPasswordChangedEmailDto.changeDate,
+      });
+
+      return {
+        success: true,
+        message: 'Email de modification de mot de passe envoyé avec succès',
+        data: {
+          to: sendPasswordChangedEmailDto.to,
+          userName: sendPasswordChangedEmailDto.userName,
+        },
+      };
+    } catch (error) {
+      console.log(error);
+
+      return {
+        success: false,
+        message: "Erreur lors de l'envoi de l'email de modification de mot de passe",
         error: error instanceof Error ? error.message : 'Erreur inconnue',
       };
     }

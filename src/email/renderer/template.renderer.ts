@@ -31,20 +31,60 @@ export class TemplateRenderer {
 
   private registerHelpers(): void {
     // Helper pour formater les dates
-    Handlebars.registerHelper('formatDate', (date: Date) => {
+    Handlebars.registerHelper('formatDate', (date: Date | string, format?: string) => {
+      // Convertir la date si c'est une string
+      let dateObj: Date;
+
+      if (typeof date === 'string') {
+        dateObj = new Date(date);
+      } else if (date instanceof Date) {
+        dateObj = date;
+      } else {
+        // if date is invalid, use current date
+        dateObj = new Date();
+      }
+
+      // check if date is valid
+      if (isNaN(dateObj.getTime())) {
+        dateObj = new Date(); // use current date if invalid
+      }
+
+      // if a specific format is provided, handle it
+      if (format) {
+        // Mapping simple formats
+        if (format.includes('DD/MM/YYYY à HH:mm')) {
+          return new Intl.DateTimeFormat('fr-FR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          }).format(dateObj);
+        }
+
+        if (format.includes('DD/MM/YYYY')) {
+          return new Intl.DateTimeFormat('fr-FR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+          }).format(dateObj);
+        }
+      }
+
+      // Default format
       return new Intl.DateTimeFormat('fr-FR', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
-      }).format(date);
+      }).format(dateObj);
     });
 
-    // Helper pour créer une nouvelle date
+    // Helper to create a new date
     Handlebars.registerHelper('now', () => {
       return new Date();
     });
 
-    // Helper pour formater la date actuelle
+    // Helper to format the current date
     Handlebars.registerHelper('formatNow', () => {
       return new Intl.DateTimeFormat('fr-FR', {
         year: 'numeric',
@@ -53,19 +93,19 @@ export class TemplateRenderer {
       }).format(new Date());
     });
 
-    // Helper pour l'année actuelle
+    // Helper for current year
     Handlebars.registerHelper('currentYear', () => {
       return new Date().getFullYear();
     });
 
-    // Helper pour les URLs
+    // Helper for URLs
     Handlebars.registerHelper('url', (path: string) => {
       const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
 
       return `${baseUrl}${path}`;
     });
 
-    // Helper conditionnel
+    // Helper to compare two values
     Handlebars.registerHelper('ifEquals', function (arg1, arg2, options) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
       return arg1 === arg2 ? options.fn(this) : options.inverse(this);
@@ -99,12 +139,12 @@ export class TemplateRenderer {
       throw new Error(`Template not found: ${templateName} at ${templateFile}`);
     }
 
-    // Compiler le template principal
+    // Compile the main template
     const templateContent = fs.readFileSync(templateFile, 'utf8');
     const template = Handlebars.compile(templateContent);
     const body = template(context);
 
-    // Appliquer le layout si il existe
+    // Apply the layout if it exists
     if (fs.existsSync(layoutFile)) {
       const layoutContent = fs.readFileSync(layoutFile, 'utf8');
       const layout = Handlebars.compile(layoutContent);
@@ -119,13 +159,13 @@ export class TemplateRenderer {
     templateName: string,
     context: Record<string, unknown>,
   ): { html: string; text: string } {
-    // Rendu HTML
+    // Render HTML
     const html = this.render(templateName, context);
 
-    // Version texte simple (supprime les balises HTML)
+    // Simple text version (strip HTML tags)
     const text = html
-      .replace(/<[^>]*>/g, '') // Supprime les balises HTML
-      .replace(/\s+/g, ' ') // Remplace les espaces multiples par un seul
+      .replace(/<[^>]*>/g, '') // Strip HTML tags
+      .replace(/\s+/g, ' ') // Replace multiple spaces with a single space
       .trim();
 
     return { html, text };

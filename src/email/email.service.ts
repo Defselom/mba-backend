@@ -219,4 +219,26 @@ export class EmailService {
       },
     });
   }
+
+  async sendPasswordChangedEmail({
+    to,
+    userName,
+    changeDate = new Date(),
+  }: {
+    to: string;
+    userName: string;
+    changeDate?: Date;
+  }): Promise<void> {
+    const subject = 'Votre mot de passe a été modifié - MBA';
+
+    await this.sendTemplatedEmail({
+      to,
+      subject,
+      template: 'password-changed',
+      context: {
+        userName,
+        changeDate: changeDate || new Date(),
+      },
+    });
+  }
 }
