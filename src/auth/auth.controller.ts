@@ -23,10 +23,17 @@ import { UAParser } from 'ua-parser-js';
 
 import { AuthService } from '@/auth/auth.service';
 import { loginExample, refreshTokenExample, RegisterExample } from '@/auth/doc';
-import { ForgotPasswordDto, LoginDto, RefreshUserTokenDto, RegisterDto } from '@/auth/dto';
+import {
+  ForgotPasswordDto,
+  LoginDto,
+  RefreshUserTokenDto,
+  RegisterDto,
+  ResetPasswordDto,
+} from '@/auth/dto';
 import { JwtGuard } from '@/auth/guard';
 import { MetaData } from '@/auth/interface';
 import { clearAuthCookies, setAuthCookies } from '@/auth/utils';
+import { ResponseUtil } from '@/shared/utils';
 
 @Controller('auth')
 export class AuthController {
@@ -227,5 +234,56 @@ export class AuthController {
   })
   async validateResetToken(@Param('token') token: string): Promise<void> {
     await this.authService.validateResetToken(token);
+  }
+
+  // reset password using the token
+  @Post('password/reset')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Reset password',
+    description:
+      'Resets the user password using a valid reset token and the new password provided.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Password has been reset successfully',
+    schema: {
+      example: {
+        statusCode: 200,
+        message: 'Password has been reset successfully',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Password reset token is invalid, expired, or already used',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: 'Invalid or expired password reset token',
+        error: 'Bad Request',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Password reset token not found',
+    schema: {
+      example: {
+        statusCode: 404,
+        message: 'Password reset token not found',
+        error: 'Not Found',
+      },
+    },
+  })
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    await this.authService.resetPassword(dto.token, dto.newPassword);
+
+    return ResponseUtil.success(
+      undefined,
+      'Password has been reset successfully',
+      undefined,
+      HttpStatus.OK,
+    );
   }
 }

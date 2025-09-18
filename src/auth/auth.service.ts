@@ -339,4 +339,47 @@ export class AuthService {
     if (resetToken.used)
       throw new BadRequestException('This password reset token has already been used');
   }
+
+  // change password using reset token
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    const tokenHash = hashResetToken(token);
+
+    const resetToken = await this.prisma.passwordResetToken.findFirst({
+      where: { token: tokenHash },
+    });
+
+    if (!resetToken) {
+      throw new NotFoundException('Password reset token not found');
+    }
+
+    if (resetToken.expiresAt < new Date()) {
+      throw new BadRequestException('Invalid or expired password reset token');
+    }
+
+    if (resetToken.used)
+      throw new BadRequestException('This password reset token has already been used');
+
+    const user = await this.prisma.userAccount.findUnique({
+      where: { id: resetToken.userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const hashedPassword = await hashPassword(newPassword);
+
+    await Promise.all([
+      this.prisma.userAccount.update({
+        where: { id: user.id },
+        data: { password: hashedPassword },
+      }),
+      this.prisma.passwordResetToken.update({
+        where: { id: resetToken.id },
+        data: { used: true },
+      }),
+    ]);
+
+    return;
+  }
 }
