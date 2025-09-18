@@ -23,16 +23,11 @@ import { UAParser } from 'ua-parser-js';
 
 import { AuthService } from '@/auth/auth.service';
 import { loginExample, refreshTokenExample, RegisterExample } from '@/auth/doc';
-import {
-  ForgotPasswordDto,
-  LoginDto,
-  RefreshUserTokenDto,
-  RegisterDto,
-  ResetPasswordDto,
-} from '@/auth/dto';
+import * as dto_1 from '@/auth/dto';
 import { JwtGuard } from '@/auth/guard';
 import { MetaData } from '@/auth/interface';
 import { clearAuthCookies, setAuthCookies } from '@/auth/utils';
+import { GetUser } from '@/decorator';
 import { ResponseUtil } from '@/shared/utils';
 
 @Controller('auth')
@@ -51,7 +46,7 @@ export class AuthController {
     example: loginExample,
   })
   async login(
-    @Body() dto: LoginDto,
+    @Body() dto: dto_1.LoginDto,
     @Res({ passthrough: true }) res: Response,
     @Req() req: Request,
   ) {
@@ -91,7 +86,7 @@ export class AuthController {
     description: 'User registered successfully',
     example: RegisterExample,
   })
-  register(@Body() dto: RegisterDto) {
+  register(@Body() dto: dto_1.RegisterDto) {
     console.log(dto);
 
     return this.authService.register(dto);
@@ -135,7 +130,7 @@ export class AuthController {
     example: refreshTokenExample,
   })
   async refreshToken(
-    @Body() dto: RefreshUserTokenDto,
+    @Body() dto: dto_1.RefreshUserTokenDto,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
@@ -195,7 +190,7 @@ export class AuthController {
     description:
       'If the email exists, a password reset link has been sent. Please check your email.',
   })
-  async forgotPassword(@Body() dto: ForgotPasswordDto): Promise<void> {
+  async forgotPassword(@Body() dto: dto_1.ForgotPasswordDto): Promise<void> {
     await this.authService.requestPasswordReset(dto.email);
   }
 
@@ -276,12 +271,56 @@ export class AuthController {
       },
     },
   })
-  async resetPassword(@Body() dto: ResetPasswordDto) {
+  async resetPassword(@Body() dto: dto_1.ResetPasswordDto) {
     await this.authService.resetPassword(dto.token, dto.newPassword);
 
     return ResponseUtil.success(
       undefined,
       'Password has been reset successfully',
+      undefined,
+      HttpStatus.OK,
+    );
+  }
+
+  // change password while logged in
+  @Post('password/change')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Change password',
+    description: 'Allows an authenticated user to change their password.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Password has been changed successfully',
+    schema: {
+      example: {
+        statusCode: 200,
+        message: 'Password has been changed successfully',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Old password is incorrect or new password is invalid',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: 'Old password is incorrect',
+        error: 'Bad Request',
+      },
+    },
+  })
+  async changePassword(
+    @Body() dto: { oldPassword: string; newPassword: string },
+    @GetUser() user: dto_1.LoggedInUser,
+  ) {
+    await this.authService.changePassword(user.id, dto.oldPassword, dto.newPassword);
+
+    return ResponseUtil.success(
+      undefined,
+      'Password has been changed successfully',
       undefined,
       HttpStatus.OK,
     );
