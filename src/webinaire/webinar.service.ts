@@ -1,20 +1,59 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 
-import { RegistrationStatus, WebinarStatus } from '@/../generated/prisma';
+import { Prisma, RegistrationStatus, WebinarStatus } from '@/../generated/prisma';
 import { PrismaService } from '@/prisma/prisma.service';
 import { AssignActorsDto, CreateWebinarDto, UpdateWebinarDto } from '@/webinaire/dto/index.dto';
+import { normalizeTags, slugify } from '@/webinaire/utils';
 
 @Injectable()
 export class WebinarService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private buildConnectOrCreate(tags: string[]) {
+    return normalizeTags(tags).map(name => {
+      const slug = slugify(name);
+
+      return {
+        where: { slug }, // unique
+        create: { name, slug }, // if absent, create it
+      };
+    });
+  }
+
+  private buildUpdateData(dto: UpdateWebinarDto): Prisma.WebinarUpdateInput {
+    const { tags, ...webinarData } = dto;
+
+    const updateData: Prisma.WebinarUpdateInput = {
+      ...webinarData,
+    };
+
+    // Gérer les tags si ils sont fournis
+    if (tags !== undefined) {
+      if (tags.length > 0) {
+        updateData.tags = {
+          set: [], // Déconnecter tous les tags existants
+          connectOrCreate: this.buildConnectOrCreate(tags), // Connecter/créer les nouveaux
+        };
+      } else {
+        updateData.tags = { set: [] };
+      }
+    }
+
+    return updateData;
+  }
+
   // Create a new webinar
-  async create(data: CreateWebinarDto) {
-    return await this.prisma.webinar.create({
+  async create(dto: CreateWebinarDto) {
+    const tagOps = dto.tags?.length
+      ? { connectOrCreate: this.buildConnectOrCreate(dto.tags) }
+      : undefined;
+
+    return this.prisma.webinar.create({
       data: {
-        ...data,
-        status: 'SCHEDULED',
+        ...dto,
+        tags: tagOps,
       },
+      include: { tags: true },
     });
   }
 
@@ -24,13 +63,16 @@ export class WebinarService {
 
     if (!webinar) throw new NotFoundException('Webinar not found');
 
-    if (['CANCELED', 'ONGOING', 'COMPLETED'].includes(webinar.status)) {
+    /*   if (['CANCELED', 'ONGOING', 'COMPLETED'].includes(webinar.status)) {
       throw new BadRequestException('You cannot update a canceled/ongoing/completed webinar');
     }
+ */
+    const updateData = this.buildUpdateData(data);
 
     return await this.prisma.webinar.update({
       where: { id },
-      data,
+      data: updateData,
+      include: { tags: true },
     });
   }
 
@@ -70,9 +112,9 @@ export class WebinarService {
 
     if (!webinar) throw new NotFoundException('Webinar not found');
 
-    if (['ONGOING', 'COMPLETED'].includes(webinar.status)) {
+    /*   if (['ONGOING', 'COMPLETED'].includes(webinar.status)) {
       throw new BadRequestException('Cannot delete an ongoing or completed webinar');
-    }
+    } */
 
     return await this.prisma.webinar.delete({ where: { id } });
   }

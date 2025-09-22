@@ -245,7 +245,7 @@ model Webinar {
   duration    Int
   legalTopic  String
   maxCapacity Int
-  status      WebinarStatus
+  status      WebinarStatus @default(SCHEDULED)
   accessLink  String?
   createdAt   DateTime      @default(now()) @db.Timestamptz(6)
   updatedAt   DateTime      @default(now()) @updatedAt @db.Timestamptz(6)
@@ -259,8 +259,16 @@ model Webinar {
   moderatedById String?
   moderatedBy   UserAccount?   @relation("ModeratedWebinars", fields: [moderatedById], references: [id])
   collaborators UserAccount[]  @relation("CollaboratorWebinars")
+  tags          Tag[]          @relation("WebinarTags")
 
   @@map("webinars")
+}
+
+model Tag {
+  id       String    @id @default(cuid())
+  name     String
+  slug     String    @unique
+  webinars Webinar[] @relation("WebinarTags")
 }
 
 // ---------- DOCUMENT ----------

@@ -1,5 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 
+import { Transform } from 'class-transformer';
+
 import {
   IsString,
   IsNotEmpty,
@@ -11,7 +13,19 @@ import {
   IsUrl,
   MinLength,
   MaxLength,
+  IsArray,
+  ArrayMaxSize,
+  IsEnum,
 } from 'class-validator';
+
+import { WebinarStatus } from 'generated/prisma';
+
+export const toTagArray = (input: unknown): string[] => {
+  if (Array.isArray(input)) return input.map(String);
+  if (typeof input === 'string') return input.split(';');
+
+  return [];
+};
 
 export class CreateWebinarDto {
   @ApiProperty({ example: 'Introduction to Banking Law' })
@@ -52,8 +66,36 @@ export class CreateWebinarDto {
   @Max(1000, { message: 'Maximum capacity is 1000 participants' })
   maxCapacity: number;
 
+  @ApiProperty({
+    example: WebinarStatus.SCHEDULED,
+    enum: WebinarStatus,
+    description: 'Status of the webinar',
+  })
+  @IsEnum(WebinarStatus, { message: 'Status must be a valid webinar status' })
+  @IsOptional()
+  status?: WebinarStatus;
+
   @ApiProperty({ example: 'https://zoom.us/xxxx' })
   @IsOptional()
   @IsUrl({}, { message: 'Access link must be a valid URL' })
   accessLink?: string;
+
+  @ApiProperty({
+    example: 'tag1;tag2;tag3 or ["tag1","tag2","tag3"]',
+    description: 'Max 4 tags, separated by semicolon or as an array',
+  })
+  @Transform(
+    ({ value }) =>
+      Array.from(
+        new Set(
+          toTagArray(value)
+            .map(t => t.trim())
+            .filter(Boolean),
+        ),
+      ).slice(0, 4), // cap: max 4 tags
+  )
+  @IsArray({ message: 'Tags must be an array of strings' })
+  @IsString({ each: true })
+  @ArrayMaxSize(4, { message: 'Maximum 4 tags allowed' })
+  tags?: string[]; // <- accepte "a;b;c" or ["a","b","c"]
 }
