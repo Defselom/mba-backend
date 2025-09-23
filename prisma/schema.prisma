@@ -1,9 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
   output   = "../generated/prisma"
@@ -100,8 +97,14 @@ model UserAccount {
   phone        String?    @db.VarChar(20)
   profileImage String?    @db.VarChar(255)
   lastLogin    DateTime?  @db.Timestamptz(6)
-  createdAt    DateTime   @default(now()) @db.Timestamptz(6)
-  updatedAt    DateTime   @default(now()) @updatedAt @db.Timestamptz(6)
+
+  // Soft delete
+  isDeleted   Boolean    @default(false)
+  deletedAt   DateTime?  @db.Timestamptz(6)
+  deletedById String?
+
+  createdAt   DateTime   @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime   @default(now()) @updatedAt @db.Timestamptz(6)
 
   // Profiles
   adminProfile        AdminProfile?
@@ -124,18 +127,26 @@ model UserAccount {
   PasswordResetToken   PasswordResetToken[]
 
   @@map("users")
+  @@index([isDeleted, deletedAt])
 }
 
 model AdminProfile {
   id          String   @id @default(cuid())
   userId      String   @unique
   adminRights String? // List, JSON, or String[]
+
+  // Soft delete
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime? @db.Timestamptz(6)
+  deletedById String?
+
   createdAt   DateTime @default(now()) @db.Timestamptz(6)
   updatedAt   DateTime @default(now()) @updatedAt @db.Timestamptz(6)
 
   user UserAccount @relation(fields: [userId], references: [id])
 
   @@map("admin_profiles")
+  @@index([isDeleted, deletedAt])
 }
 
 model SpeakerProfile {
@@ -149,11 +160,18 @@ model SpeakerProfile {
   biography           String?
   scheduleConstraints String?
   animationExperience String?
+
+  // Soft delete
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime? @db.Timestamptz(6)
+  deletedById String?
+
   createdAt           DateTime    @default(now()) @db.Timestamptz(6)
   updatedAt           DateTime    @default(now()) @updatedAt @db.Timestamptz(6)
   user                UserAccount @relation(fields: [userId], references: [id])
 
   @@map("speaker_profiles")
+  @@index([isDeleted, deletedAt])
 }
 
 model ModeratorProfile {
@@ -166,11 +184,18 @@ model ModeratorProfile {
   professionalPhoto        String?
   biography                String?
   comfortDomains           String? // JSON or String[]
+
+  // Soft delete
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime? @db.Timestamptz(6)
+  deletedById String?
+
   createdAt                DateTime    @default(now()) @db.Timestamptz(6)
   updatedAt                DateTime    @default(now()) @updatedAt @db.Timestamptz(6)
   user                     UserAccount @relation(fields: [userId], references: [id])
 
   @@map("moderator_profiles")
+  @@index([isDeleted, deletedAt])
 }
 
 model CollaboratorProfile {
@@ -181,11 +206,18 @@ model CollaboratorProfile {
   collaborationType String?
   motivations       String?
   otherCommitments  String?
+
+  // Soft delete
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime? @db.Timestamptz(6)
+  deletedById String?
+
   createdAt         DateTime    @default(now()) @db.Timestamptz(6)
   updatedAt         DateTime    @default(now()) @updatedAt @db.Timestamptz(6)
   user              UserAccount @relation(fields: [userId], references: [id])
 
   @@map("collaborator_profiles")
+  @@index([isDeleted, deletedAt])
 }
 
 model ParticipantProfile {
@@ -196,11 +228,18 @@ model ParticipantProfile {
   participationMotivation String?
   otherPlatforms          String?
   wishedLegalThemes       String? // JSON or String[]
+
+  // Soft delete
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime? @db.Timestamptz(6)
+  deletedById String?
+
   createdAt               DateTime    @default(now()) @db.Timestamptz(6)
   updatedAt               DateTime    @default(now()) @updatedAt @db.Timestamptz(6)
   user                    UserAccount @relation(fields: [userId], references: [id])
 
   @@map("participant_profiles")
+  @@index([isDeleted, deletedAt])
 }
 
 model PartnerApplication {
@@ -215,6 +254,12 @@ model PartnerApplication {
   collaborationExperience String?
   phone                   String
   status                  ApplicationStatus @default(PENDING)
+
+  // Soft delete
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime? @db.Timestamptz(6)
+  deletedById String?
+
   adminComment            String?
   createdAt               DateTime          @default(now())
   updatedAt               DateTime          @default(now()) @updatedAt
@@ -224,17 +269,8 @@ model PartnerApplication {
   user   UserAccount? @relation(fields: [userId], references: [id])
 
   @@map("partner_applications")
+  @@index([isDeleted, deletedAt])
 }
-
-/**
- * // ---------- VISITOR ----------
- * model Visitor {
- * id             String    @id @default(cuid())
- * sessionId      String
- * visitDate      DateTime
- * consultedPages String?   // List as JSON if needed
- * }
- */
 
 // ---------- WEBINAR ----------
 model Webinar {
@@ -247,6 +283,12 @@ model Webinar {
   maxCapacity Int
   status      WebinarStatus @default(SCHEDULED)
   accessLink  String?
+
+  // Soft delete
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime? @db.Timestamptz(6)
+  deletedById String?
+
   createdAt   DateTime      @default(now()) @db.Timestamptz(6)
   updatedAt   DateTime      @default(now()) @updatedAt @db.Timestamptz(6)
 
@@ -262,13 +304,21 @@ model Webinar {
   tags          Tag[]          @relation("WebinarTags")
 
   @@map("webinars")
+  @@index([isDeleted, deletedAt])
 }
 
 model Tag {
-  id       String    @id @default(cuid())
-  name     String
-  slug     String    @unique
-  webinars Webinar[] @relation("WebinarTags")
+  id         String    @id @default(cuid())
+  name       String
+  slug       String    @unique
+  webinars   Webinar[] @relation("WebinarTags")
+
+  // Soft delete
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime? @db.Timestamptz(6)
+  deletedById String?
+
+  @@index([isDeleted, deletedAt])
 }
 
 // ---------- DOCUMENT ----------
@@ -281,6 +331,12 @@ model Document {
   legalDomain     String
   description     String?
   sizeBytes       Int
+
+  // Soft delete
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime? @db.Timestamptz(6)
+  deletedById String?
+
   createdAt       DateTime     @default(now()) @db.Timestamptz(6)
   updatedAt       DateTime     @default(now()) @updatedAt @db.Timestamptz(6)
 
@@ -288,21 +344,29 @@ model Document {
   downloadedBy UserAccount[] @relation("UserDownloads")
 
   @@map("documents")
+  @@index([isDeleted, deletedAt])
 }
 
 // ---------- TESTIMONIAL ----------
 model Testimonial {
   id        String           @id @default(cuid())
   content   String
-  createdAt DateTime         @default(now()) @db.Timestamptz(6)
   status    ModerationStatus
   rating    Int?
+
+  // Soft delete
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime? @db.Timestamptz(6)
+  deletedById String?
+
+  createdAt DateTime         @default(now()) @db.Timestamptz(6)
   userId    String
   user      UserAccount      @relation(fields: [userId], references: [id])
   webinarId String?
   webinar   Webinar?         @relation(fields: [webinarId], references: [id])
 
   @@map("testimonials")
+  @@index([isDeleted, deletedAt])
 }
 
 // ---------- PERSONALIZED SUPPORT ----------
@@ -315,12 +379,19 @@ model PersonalizedSupport {
   communicationStyle  String?
   status              ModerationStatus
   estimatedCost       Float?
+
+  // Soft delete
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime? @db.Timestamptz(6)
+  deletedById String?
+
   createdAt           DateTime                @default(now()) @db.Timestamptz(6)
   updatedAt           DateTime                @default(now()) @updatedAt @db.Timestamptz(6)
   userId              String
   user                UserAccount             @relation(fields: [userId], references: [id])
 
   @@map("personalized_supports")
+  @@index([isDeleted, deletedAt])
 }
 
 // ---------- REGISTRATION ----------
@@ -333,8 +404,14 @@ model Registration {
   webinarId        String
   webinar          Webinar            @relation(fields: [webinarId], references: [id])
 
+  // Soft delete
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime? @db.Timestamptz(6)
+  deletedById String?
+
   @@unique([webinarId, userId])
   @@map("registrations")
+  @@index([isDeleted, deletedAt])
 }
 
 // ---------- SUPPORT (Document upload) ----------
@@ -343,6 +420,12 @@ model Support {
   title        String
   file         String
   type         SupportType
+
+  // Soft delete
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime? @db.Timestamptz(6)
+  deletedById String?
+
   createdAt    DateTime     @default(now()) @db.Timestamptz(6)
   updatedAt    DateTime     @default(now()) @updatedAt @db.Timestamptz(6)
   webinarId    String?
@@ -351,6 +434,7 @@ model Support {
   uploadedBy   UserAccount? @relation(fields: [uploadedById], references: [id])
 
   @@map("supports")
+  @@index([isDeleted, deletedAt])
 }
 
 model Session {
