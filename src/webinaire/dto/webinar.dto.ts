@@ -32,6 +32,9 @@ export class WebinarDto {
   accessLink?: string;
 
   @ApiProperty({ required: false })
+  totalSubscribers?: number;
+
+  @ApiProperty({ required: false })
   animatedById?: string;
 
   @ApiProperty({ required: false })

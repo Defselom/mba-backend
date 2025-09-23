@@ -42,6 +42,13 @@ export class WebinarService {
     return updateData;
   }
 
+  // private methods to count total subscribers
+  private async countSubscribers(webinarId: string): Promise<number> {
+    return this.prisma.registration.count({
+      where: { webinarId, status: RegistrationStatus.CONFIRMED },
+    });
+  }
+
   // Create a new webinar
   async create(dto: CreateWebinarDto) {
     const tagOps = dto.tags?.length
@@ -134,13 +141,27 @@ export class WebinarService {
           animatedBy: true,
           moderatedBy: true,
           collaborators: true,
-          registrations: true,
         },
       }),
       this.prisma.webinar.count(),
     ]);
 
-    return { data, total };
+    const dataWithSubscribers = await Promise.all(
+      data.map(async webinar => {
+        const totalSubscribers = await this.countSubscribers(webinar.id);
+
+        return {
+          ...webinar,
+          totalSubscribers: totalSubscribers,
+        };
+      }),
+    );
+
+    console.log('Webinars with Subscriber Counts:');
+
+    console.log({ dataWithSubscribers, total });
+
+    return { data: dataWithSubscribers, total };
   }
 
   // Assign actors: animatedBy, moderatedBy, collaborators
