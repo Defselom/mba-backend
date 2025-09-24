@@ -55,6 +55,7 @@ export class AuthService {
     const userExists = await this.prisma.userAccount.findFirst({
       where: {
         OR: [{ email: dto.email }, { username: dto.username }],
+        isDeleted: false,
       },
     });
 
@@ -72,8 +73,7 @@ export class AuthService {
         username: dto.username,
         password: hashedPassword,
         role: dto.role,
-        status:
-          dto.role == UserRole.PARTICIPANT ? UserStatus.ACTIVE : UserStatus.PENDING_VALIDATION,
+        status: UserStatus.PENDING_VALIDATION,
         firstName: dto.firstName,
         lastName: dto.lastName,
         birthDate: dto.birthDate ? new Date(dto.birthDate) : undefined,
@@ -140,11 +140,17 @@ export class AuthService {
     const user = await this.prisma.userAccount.findFirst({
       where: {
         OR: [{ email: dto.email }, { username: dto.username }],
+        isDeleted: false,
       },
     });
 
     if (!user) {
       throw new NotFoundException('User not found');
+    }
+
+    // Vérifier que l'utilisateur n'est pas supprimé (soft delete)
+    if (user.isDeleted) {
+      throw new UnauthorizedException('Account is no longer available');
     }
 
     // check password
@@ -228,11 +234,16 @@ export class AuthService {
       //console.log(payload);
 
       const user = await this.prisma.userAccount.findUnique({
-        where: { id: payload.sub },
+        where: { id: payload.sub, isDeleted: false },
       });
 
       if (!user) {
         throw new UnauthorizedException('User not found');
+      }
+
+      // Vérifier que l'utilisateur n'est pas supprimé (soft delete)
+      if (user.isDeleted) {
+        throw new UnauthorizedException('Account is no longer available');
       }
 
       const newPayload = {
@@ -291,7 +302,9 @@ export class AuthService {
 
   // request password reset: generate a token, email and always respond 202
   async requestPasswordReset(email: string): Promise<void> {
-    const user = await this.prisma.userAccount.findUnique({ where: { email } });
+    const user = await this.prisma.userAccount.findUnique({
+      where: { email, isDeleted: false },
+    });
 
     if (user) {
       // Generate token and its hash
@@ -360,7 +373,7 @@ export class AuthService {
       throw new BadRequestException('This password reset token has already been used');
 
     const user = await this.prisma.userAccount.findUnique({
-      where: { id: resetToken.userId },
+      where: { id: resetToken.userId, isDeleted: false },
     });
 
     if (!user) {
@@ -393,7 +406,7 @@ export class AuthService {
   // change password when logged in
   async changePassword(userId: string, oldPassword: string, newPassword: string): Promise<void> {
     const user = await this.prisma.userAccount.findUnique({
-      where: { id: userId },
+      where: { id: userId, isDeleted: false },
     });
 
     if (!user) {

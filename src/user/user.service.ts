@@ -122,19 +122,24 @@ export class UserService {
 
     const [data, total] = await this.prisma.$transaction([
       this.prisma.userAccount.findMany({
+        where: { isDeleted: false },
         skip: (page - 1) * limit,
         take: limit,
         orderBy: { [sortBy]: sortOrder },
         omit: { password: true },
       }),
-      this.prisma.userAccount.count(),
+      this.prisma.userAccount.count({
+        where: { isDeleted: false },
+      }),
     ]);
 
     return { data: data as GetAllUserDto[], total };
   }
 
   async update(id: string, dto: UpdateUserDto): Promise<LoggedInUser> {
-    const user = await this.prisma.userAccount.findUnique({ where: { id } });
+    const user = await this.prisma.userAccount.findUnique({
+      where: { id, isDeleted: false },
+    });
 
     if (!user) {
       throw new NotFoundException('User not found');
@@ -152,10 +157,10 @@ export class UserService {
     return updatedUser;
   }
 
-  // delete user
+  // soft delete user
   async delete(id: string): Promise<void> {
     const user = await this.prisma.userAccount.findUnique({
-      where: { id },
+      where: { id, isDeleted: false },
       select: { role: true },
     });
 
@@ -163,21 +168,21 @@ export class UserService {
       throw new NotFoundException('User not found');
     }
 
-    await this.prisma.userAccount.delete({
+    // Effectuer un soft delete au lieu d'une suppression physique
+    await this.prisma.userAccount.update({
       where: { id },
-      include: {
-        adminProfile: true,
-        speakerProfile: true,
-        moderatorProfile: true,
-        collaboratorProfile: true,
-        participantProfile: true,
+      data: {
+        isDeleted: true,
+        deletedAt: new Date(),
       },
     });
   }
 
   // update user status
   async updateStatus(id: string, userStatus: UserStatus): Promise<void> {
-    const user = await this.prisma.userAccount.findUnique({ where: { id } });
+    const user = await this.prisma.userAccount.findUnique({
+      where: { id, isDeleted: false },
+    });
 
     if (!user) {
       throw new NotFoundException('User not found');
@@ -192,7 +197,9 @@ export class UserService {
   }
 
   async updateRole(id: string, userRole: UserRole): Promise<void> {
-    const user = await this.prisma.userAccount.findUnique({ where: { id } });
+    const user = await this.prisma.userAccount.findUnique({
+      where: { id, isDeleted: false },
+    });
 
     if (!user) {
       throw new NotFoundException('User not found');
@@ -208,8 +215,10 @@ export class UserService {
 
   async getUserRegistrations(userId: string) {
     const registrations = await this.prisma.registration.findMany({
-      where: { userId },
-      include: { webinar: true },
+      where: { userId, isDeleted: false },
+      include: {
+        webinar: true,
+      },
     });
 
     return registrations;

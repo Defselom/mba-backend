@@ -22,6 +22,7 @@ export class DocumentService {
     const { type, legalDomain, search, publishedAfter, publishedBefore, page, limit } = query;
 
     const where: Prisma.DocumentWhereInput = {
+      isDeleted: false,
       type,
       legalDomain: legalDomain ? { contains: legalDomain, mode: 'insensitive' } : undefined,
       ...(search
@@ -55,7 +56,9 @@ export class DocumentService {
   }
 
   async findOne(id: string) {
-    const doc = await this.prisma.document.findUnique({ where: { id } });
+    const doc = await this.prisma.document.findUnique({
+      where: { id, isDeleted: false },
+    });
 
     if (!doc) throw new NotFoundException('Document not found');
 
@@ -63,10 +66,34 @@ export class DocumentService {
   }
 
   async update(id: string, dto: UpdateDocumentDto) {
+    // Vérifier que le document existe et n'est pas supprimé
+    const existingDoc = await this.prisma.document.findUnique({
+      where: { id, isDeleted: false },
+    });
+
+    if (!existingDoc) {
+      throw new NotFoundException('Document not found');
+    }
+
     return this.prisma.document.update({ where: { id }, data: dto });
   }
 
+  // Soft delete
   async remove(id: string) {
-    return this.prisma.document.delete({ where: { id } });
+    const existingDoc = await this.prisma.document.findUnique({
+      where: { id, isDeleted: false },
+    });
+
+    if (!existingDoc) {
+      throw new NotFoundException('Document not found');
+    }
+
+    return this.prisma.document.update({
+      where: { id },
+      data: {
+        isDeleted: true,
+        deletedAt: new Date(),
+      },
+    });
   }
 }

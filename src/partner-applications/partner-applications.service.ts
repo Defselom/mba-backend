@@ -28,13 +28,18 @@ export class PartnerApplicationsService {
 
   async findMany(params?: { status?: ApplicationStatus }) {
     return this.prisma.partnerApplication.findMany({
-      where: { status: params?.status },
+      where: {
+        status: params?.status,
+        isDeleted: false,
+      },
       orderBy: { createdAt: 'desc' },
     });
   }
 
   async findOne(id: string) {
-    const app = await this.prisma.partnerApplication.findUnique({ where: { id } });
+    const app = await this.prisma.partnerApplication.findUnique({
+      where: { id, isDeleted: false },
+    });
 
     if (!app) throw new NotFoundException('Candidature not found');
 
@@ -58,5 +63,18 @@ export class PartnerApplicationsService {
     }
  */
     return updated;
+  }
+
+  // Soft delete d'une candidature
+  async delete(id: string) {
+    const app = await this.findOne(id);
+
+    return await this.prisma.partnerApplication.update({
+      where: { id: app.id },
+      data: {
+        isDeleted: true,
+        deletedAt: new Date(),
+      },
+    });
   }
 }

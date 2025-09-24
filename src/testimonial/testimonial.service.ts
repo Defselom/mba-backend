@@ -18,7 +18,9 @@ export class TestimonialService {
   async create(authorUserId: string, dto: CreateTestimonialDto): Promise<Testimonial> {
     // Optional: ensure webinar exists if provided
     if (dto.webinarId) {
-      const webinar = await this.prisma.webinar.findUnique({ where: { id: dto.webinarId } });
+      const webinar = await this.prisma.webinar.findUnique({
+        where: { id: dto.webinarId, isDeleted: false },
+      });
 
       if (!webinar) throw new BadRequestException('Related webinar not found');
     }
@@ -38,6 +40,7 @@ export class TestimonialService {
     const { status, userId, webinarId, search, page = 1, limit = 10 } = query;
 
     const where: Prisma.TestimonialWhereInput = {
+      isDeleted: false,
       status,
       userId,
       webinarId,
@@ -51,8 +54,12 @@ export class TestimonialService {
         skip: (page - 1) * limit,
         take: limit,
         include: {
-          user: { select: { id: true, firstName: true, lastName: true, profileImage: true } },
-          webinar: { select: { id: true, title: true, dateTime: true } },
+          user: {
+            select: { id: true, firstName: true, lastName: true, profileImage: true },
+          },
+          webinar: {
+            select: { id: true, title: true, dateTime: true },
+          },
         },
       }),
       this.prisma.testimonial.count({ where }),
@@ -71,7 +78,7 @@ export class TestimonialService {
 
   async findOne(id: string) {
     const entity = await this.prisma.testimonial.findUnique({
-      where: { id },
+      where: { id, isDeleted: false },
       include: {
         user: { select: { id: true, firstName: true, lastName: true, profileImage: true } },
         webinar: { select: { id: true, title: true, dateTime: true } },
@@ -84,7 +91,9 @@ export class TestimonialService {
   }
 
   async updateAsAuthor(id: string, authorUserId: string, dto: UpdateTestimonialDto) {
-    const entity = await this.prisma.testimonial.findUnique({ where: { id } });
+    const entity = await this.prisma.testimonial.findUnique({
+      where: { id, isDeleted: false },
+    });
 
     if (!entity) throw new NotFoundException('Testimonial not found');
 
@@ -105,8 +114,11 @@ export class TestimonialService {
     });
   }
 
+  // Soft delete pour l'auteur
   async removeAsAuthor(id: string, authorUserId: string) {
-    const entity = await this.prisma.testimonial.findUnique({ where: { id } });
+    const entity = await this.prisma.testimonial.findUnique({
+      where: { id, isDeleted: false },
+    });
 
     if (!entity) throw new NotFoundException('Testimonial not found');
 
@@ -119,13 +131,22 @@ export class TestimonialService {
       throw new BadRequestException('Only pending testimonials can be deleted by the author');
     }
 
-    await this.prisma.testimonial.delete({ where: { id } });
+    await this.prisma.testimonial.update({
+      where: { id },
+      data: {
+        isDeleted: true,
+        deletedAt: new Date(),
+        deletedById: authorUserId,
+      },
+    });
 
     return { success: true };
   }
 
   async approve(id: string) {
-    const entity = await this.prisma.testimonial.findUnique({ where: { id } });
+    const entity = await this.prisma.testimonial.findUnique({
+      where: { id, isDeleted: false },
+    });
 
     if (!entity) throw new NotFoundException('Testimonial not found');
 
@@ -138,7 +159,9 @@ export class TestimonialService {
   }
 
   async reject(id: string) {
-    const entity = await this.prisma.testimonial.findUnique({ where: { id } });
+    const entity = await this.prisma.testimonial.findUnique({
+      where: { id, isDeleted: false },
+    });
 
     if (!entity) throw new NotFoundException('Testimonial not found');
 
@@ -150,12 +173,21 @@ export class TestimonialService {
     });
   }
 
+  // Soft delete pour l'admin
   async removeAsAdmin(id: string) {
-    const entity = await this.prisma.testimonial.findUnique({ where: { id } });
+    const entity = await this.prisma.testimonial.findUnique({
+      where: { id, isDeleted: false },
+    });
 
     if (!entity) throw new NotFoundException('Testimonial not found');
 
-    await this.prisma.testimonial.delete({ where: { id } });
+    await this.prisma.testimonial.update({
+      where: { id },
+      data: {
+        isDeleted: true,
+        deletedAt: new Date(),
+      },
+    });
 
     return { success: true };
   }

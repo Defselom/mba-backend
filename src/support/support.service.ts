@@ -53,7 +53,7 @@ export class SupportService {
       // find if webinar exists if webinarId is provided
       if (dto.webinarId) {
         const webinar = await this.prisma.webinar.findUnique({
-          where: { id: dto.webinarId },
+          where: { id: dto.webinarId, isDeleted: false },
           select: { id: true },
         });
 
@@ -105,7 +105,9 @@ export class SupportService {
     const validatedLimit = Math.min(100, Math.max(1, limit)); //  Max limit at 100
 
     // Construction of the where clause
-    const where: Prisma.SupportWhereInput = {};
+    const where: Prisma.SupportWhereInput = {
+      isDeleted: false,
+    };
 
     if (type) {
       where.type = type;
@@ -201,7 +203,7 @@ export class SupportService {
 
     try {
       const support = await this.prisma.support.findUnique({
-        where: { id },
+        where: { id, isDeleted: false },
       });
 
       if (!support) {
@@ -228,7 +230,7 @@ export class SupportService {
    */
   async update(id: string, dto: UpdateSupportDto): Promise<SupportWithPresignedUrl> {
     const existing = await this.prisma.support.findUnique({
-      where: { id },
+      where: { id, isDeleted: false },
     });
 
     if (!existing) {
@@ -268,12 +270,12 @@ export class SupportService {
   }
 
   /**
-   * Delete a support document
+   * Soft delete a support document
    */
   async delete(id: string): Promise<{ message: string }> {
     try {
       const support = await this.prisma.support.findUnique({
-        where: { id },
+        where: { id, isDeleted: false },
         select: { id: true, file: true },
       });
 
@@ -281,10 +283,16 @@ export class SupportService {
         throw new NotFoundException(`Support with ID ${id} not found`);
       }
 
-      // Supprime le support de la base de données
-      await this.prisma.support.delete({ where: { id } });
+      // Effectue un soft delete au lieu d'une suppression physique
+      await this.prisma.support.update({
+        where: { id },
+        data: {
+          isDeleted: true,
+          deletedAt: new Date(),
+        },
+      });
 
-      // TODO: Optionnel - Supprimer le fichier du stockage
+      // TODO: Optionnel - Supprimer le fichier du stockage après soft delete
       // if (support.file) {
       //   await this.uploadService.deleteFile(support.file);
       // }
@@ -306,6 +314,7 @@ export class SupportService {
     try {
       const counts = await this.prisma.support.groupBy({
         by: ['type'],
+        where: { isDeleted: false },
         _count: {
           type: true,
         },

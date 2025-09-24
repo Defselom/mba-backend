@@ -467,3 +467,4 @@ model PasswordResetToken {
 
   @@map("password_reset_tokens")
 }
+
