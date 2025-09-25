@@ -1,11 +1,11 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
-import { Type } from 'class-transformer';
 import { IsDateString, IsEnum, IsOptional, IsString } from 'class-validator';
 
 import { DocumentType } from '@/../generated/prisma';
+import { PaginationDto } from '@/shared/dto';
 
-export class QueryDocumentDto {
+export class QueryDocumentDto extends PaginationDto {
   @ApiPropertyOptional({ description: 'Filter by document type', enum: DocumentType })
   @IsOptional()
   @IsEnum(DocumentType)
@@ -16,11 +16,6 @@ export class QueryDocumentDto {
   @IsString()
   legalDomain?: string;
 
-  @ApiPropertyOptional({ description: 'Search in title or description' })
-  @IsOptional()
-  @IsString()
-  search?: string;
-
   @ApiPropertyOptional({ description: 'Published after this date' })
   @IsOptional()
   @IsDateString()
@@ -30,12 +25,4 @@ export class QueryDocumentDto {
   @IsOptional()
   @IsDateString()
   publishedBefore?: Date;
-
-  @ApiPropertyOptional({ default: 1 })
-  @Type(() => Number)
-  page: number = 1;
-
-  @ApiPropertyOptional({ default: 10 })
-  @Type(() => Number)
-  limit: number = 10;
 }

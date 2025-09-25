@@ -3,7 +3,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { QueryDocumentDto } from './dto/query-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
-import { Prisma } from '@/../generated/prisma';
+import { Prisma, DocumentType } from '@/../generated/prisma';
 import { PrismaService } from '@/prisma/prisma.service';
 
 @Injectable()
@@ -18,13 +18,25 @@ export class DocumentService {
     });
   }
 
-  async findAll(query: QueryDocumentDto) {
-    const { type, legalDomain, search, publishedAfter, publishedBefore, page, limit } = query;
+  async findAll(queryDto: QueryDocumentDto) {
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      sortBy = 'publicationDate',
+      sortOrder = 'desc',
+      type,
+      legalDomain,
+      publishedAfter,
+      publishedBefore,
+    } = queryDto;
 
     const where: Prisma.DocumentWhereInput = {
       isDeleted: false,
-      type,
-      legalDomain: legalDomain ? { contains: legalDomain, mode: 'insensitive' } : undefined,
+      ...(type && { type }),
+      ...(legalDomain && {
+        legalDomain: { contains: legalDomain, mode: 'insensitive' },
+      }),
       ...(search
         ? {
             OR: [
@@ -33,16 +45,26 @@ export class DocumentService {
             ],
           }
         : {}),
-      publicationDate: {
-        gte: publishedAfter,
-        lte: publishedBefore,
-      },
+      ...(publishedAfter || publishedBefore
+        ? {
+            publicationDate: {
+              ...(publishedAfter && { gte: publishedAfter }),
+              ...(publishedBefore && { lte: publishedBefore }),
+            },
+          }
+        : {}),
     };
+
+    const validSortFields = ['publicationDate', 'createdAt', 'updatedAt', 'title'] as const;
+
+    const finalSortBy = validSortFields.includes(sortBy as (typeof validSortFields)[number])
+      ? sortBy
+      : 'publicationDate';
 
     const [items, total] = await this.prisma.$transaction([
       this.prisma.document.findMany({
         where,
-        orderBy: { publicationDate: 'desc' },
+        orderBy: { [finalSortBy]: sortOrder },
         skip: (page - 1) * limit,
         take: limit,
       }),

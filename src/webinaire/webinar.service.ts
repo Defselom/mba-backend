@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 
 import { Prisma, RegistrationStatus, Support, WebinarStatus } from '@/../generated/prisma';
 import { PrismaService } from '@/prisma/prisma.service';
+import { PaginationDto } from '@/shared/dto/pagination.dto';
 import { AssignActorsDto, CreateWebinarDto, UpdateWebinarDto } from '@/webinaire/dto/index.dto';
 import { normalizeTags, slugify } from '@/webinaire/utils';
 
@@ -147,17 +148,12 @@ export class WebinarService {
   }
 
   // List & paginate all webinars (admin)
-  async findAll(pagination: {
-    page?: number;
-    limit?: number;
-    sortBy?: string;
-    sortOrder?: 'asc' | 'desc';
-  }) {
-    const page = pagination.page || 1;
-    const limit = Math.min(100, Math.max(1, pagination.limit || 10)); // Limit maximum à 100
+  async findAll(paginationDto: PaginationDto) {
+    const page = paginationDto.page || 1;
+    const limit = Math.min(100, Math.max(1, paginationDto.limit || 10)); // Limit maximum à 100
     const skip = (page - 1) * limit;
-    const sortBy = pagination.sortBy || 'dateTime';
-    const sortOrder = pagination.sortOrder || 'desc';
+    const sortBy = paginationDto.sortBy || 'dateTime';
+    const sortOrder = paginationDto.sortOrder || 'desc';
 
     // Validation du champ de tri
     const validSortFields = ['dateTime', 'createdAt', 'updatedAt', 'title', 'status'] as const;

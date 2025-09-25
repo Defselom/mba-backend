@@ -4,20 +4,8 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { SupportType, Prisma } from '@/../generated/prisma';
 import { LoggedInUser } from '@/auth/dto';
 import { PrismaService } from '@/prisma/prisma.service';
-import { CreateSupportDto, UpdateSupportDto } from '@/support/dto';
+import { CreateSupportDto, UpdateSupportDto, SupportQueryDto } from '@/support/dto';
 import { UploadService } from '@/upload/upload.service';
-
-// Interface pour la query de recherche
-interface FindAllQuery {
-  page?: number;
-  limit?: number;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
-  type?: SupportType;
-  search?: string;
-  from?: string;
-  to?: string;
-}
 
 // Interface pour la réponse paginée
 interface PaginatedResponse<T> {
@@ -88,17 +76,17 @@ export class SupportService {
   /**
    * Récupère tous les supports avec pagination et filtres
    */
-  async findAll(query: FindAllQuery): Promise<PaginatedResponse<SupportWithPresignedUrl>> {
+  async findAll(queryDto: SupportQueryDto): Promise<PaginatedResponse<SupportWithPresignedUrl>> {
     const {
       page = 1,
       limit = 10,
       sortBy = 'createdAt',
       sortOrder = 'desc',
-      type,
       search,
+      type,
       from,
       to,
-    } = query;
+    } = queryDto;
 
     // Validate pagination parameters
     const validatedPage = Math.max(1, page);

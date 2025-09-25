@@ -3,7 +3,9 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreatePartnerApplicationDto } from './dto/create-partner-application.dto';
 import { ReviewPartnerApplicationDto } from './dto/review-partner-application.dto';
 import { ApplicationStatus } from '@/../generated/prisma';
+import { Prisma } from '@/../generated/prisma';
 import { PrismaService } from '@/prisma/prisma.service';
+import { PaginationDto } from '@/shared/dto';
 
 @Injectable()
 export class PartnerApplicationsService {
@@ -25,24 +27,54 @@ export class PartnerApplicationsService {
       },
     });
   }
+  async findMany(paginationDto: PaginationDto, params?: { status?: ApplicationStatus }) {
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+    } = paginationDto;
 
-  async findMany(params?: { status?: ApplicationStatus; page?: number; limit?: number }) {
-    const page = params?.page ?? 1;
-    const limit = params?.limit ?? 10;
     const skip = (page - 1) * limit;
 
-    const where = {
-      status: params?.status,
-      isDeleted: false,
+    const AND: Prisma.PartnerApplicationWhereInput[] = [{ isDeleted: false }];
+
+    if (params?.status) {
+      AND.push({ status: params.status });
+    }
+
+    if (search) {
+      AND.push({
+        OR: [
+          { responsibleFirstName: { contains: search, mode: 'insensitive' } },
+          { responsibleLastName: { contains: search, mode: 'insensitive' } },
+          { responsibleEmail: { contains: search, mode: 'insensitive' } },
+          { structureName: { contains: search, mode: 'insensitive' } },
+        ],
+      });
+    }
+
+    const where: Prisma.PartnerApplicationWhereInput = AND.length ? { AND } : {};
+
+    const validSortFields = [
+      'createdAt',
+      'updatedAt',
+      'responsibleFirstName',
+      'structureName',
+      'status',
+    ] as const;
+
+    const finalSortBy = validSortFields.includes(sortBy as (typeof validSortFields)[number])
+      ? sortBy
+      : 'createdAt';
+
+    const orderBy: Prisma.PartnerApplicationOrderByWithRelationInput = {
+      [finalSortBy]: sortOrder,
     };
 
-    const [data, total] = await this.prisma.$transaction([
-      this.prisma.partnerApplication.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
-      }),
+    const [data, total] = await Promise.all([
+      this.prisma.partnerApplication.findMany({ where, orderBy, skip, take: limit }),
       this.prisma.partnerApplication.count({ where }),
     ]);
 
