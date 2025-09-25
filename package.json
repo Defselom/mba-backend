@@ -7,9 +7,12 @@
   "license": "UNLICENSED",
   "scripts": {
     "prisma:dev:deploy": "prisma migrate deploy",
+    "prisma:seed": "ts-node prisma/seed.ts",
+    "prisma:seed:dev": "prisma db seed",
     "db:dev:rm": "docker compose rm dev-db -s -f -v",
     "db:dev:up": "docker compose up dev-db -d",
     "db:dev:restart": "pnpm db:dev:rm && pnpm db:dev:up && sleep 1 && pnpm prisma:dev:deploy",
+    "db:dev:reset": "pnpm db:dev:restart && pnpm prisma:seed",
     "prisma:test:deploy": "dotenv -e .env.test -- prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "prisma:test:studio": "dotenv -e .env.test -- prisma studio",
@@ -116,5 +119,8 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
+  },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
   }
 }
