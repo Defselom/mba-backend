@@ -6,10 +6,10 @@ import {
 } from '@nestjs/common';
 
 import { CreateTestimonialDto } from './dto/create-testimonial.dto';
-import { QueryTestimonialDto } from './dto/query-testimonial.dto';
 import { UpdateTestimonialDto } from './dto/update-testimonial.dto';
 import { ModerationStatus, Prisma, Testimonial } from '@/../generated/prisma';
 import { PrismaService } from '@/prisma/prisma.service';
+import { QueryTestimonialDto } from '@/testimonial/dto';
 
 @Injectable()
 export class TestimonialService {
@@ -36,21 +36,36 @@ export class TestimonialService {
     });
   }
 
-  async findAll(query: QueryTestimonialDto) {
-    const { status, userId, webinarId, search, page = 1, limit = 10 } = query;
-
-    const where: Prisma.TestimonialWhereInput = {
-      isDeleted: false,
+  async findAll(queryDto: QueryTestimonialDto) {
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
       status,
       userId,
       webinarId,
+    } = queryDto;
+
+    const where: Prisma.TestimonialWhereInput = {
+      isDeleted: false,
+      ...(status && { status }),
+      ...(userId && { userId }),
+      ...(webinarId && { webinarId }),
       ...(search ? { content: { contains: search, mode: Prisma.QueryMode.insensitive } } : {}),
     };
+
+    const validSortFields = ['createdAt', 'updatedAt', 'rating'] as const;
+
+    const finalSortBy = validSortFields.includes(sortBy as (typeof validSortFields)[number])
+      ? sortBy
+      : 'createdAt';
 
     const [items, total] = await this.prisma.$transaction([
       this.prisma.testimonial.findMany({
         where,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { [finalSortBy]: sortOrder },
         skip: (page - 1) * limit,
         take: limit,
         include: {

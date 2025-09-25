@@ -41,10 +41,7 @@ export class PartnerApplicationsController {
   })
   @ApiResponse({ status: 200, description: 'List of partner applications retrieved successfully.' })
   async list(@Query() query: PaginationDto, @Req() request: Request) {
-    const result = await this.service.findMany({
-      page: query.page,
-      limit: query.limit,
-    });
+    const result = await this.service.findMany(query);
 
     const baseUrl = generateBaseUrl(request);
 
