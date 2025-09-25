@@ -1,7 +1,6 @@
 import {
   BadRequestException,
   ConflictException,
-  HttpStatus,
   Injectable,
   NotFoundException,
   UnauthorizedException,
@@ -14,13 +13,37 @@ import { UserRole, UserStatus } from '@/../generated/prisma';
 import { PasswordResetTokenExpiration, TokenExpiration } from '@/auth/constants';
 import { JwtPayload, LoginDto } from '@/auth/dto';
 import { RegisterDto } from '@/auth/dto/register.dto';
-import { MetaData, authResponse } from '@/auth/interface';
+import { MetaData } from '@/auth/interface';
 import { generateResetToken, hashResetToken } from '@/auth/utils';
 import { hashPassword, verifyPassword } from '@/auth/utils/handlePassword';
 import { EmailService } from '@/email/email.service';
 import { PrismaService } from '@/prisma/prisma.service';
-import { ApiResponse } from '@/shared/interfaces';
-import { ResponseUtil } from '@/shared/utils';
+
+export interface AuthTokens {
+  access_token: string;
+  refresh_token: string;
+}
+
+export interface LoginResult {
+  user: JwtPayload;
+  access_token: string;
+  refresh_token: string;
+}
+
+export interface UserData {
+  id: string;
+  email: string;
+  username: string;
+  role: UserRole;
+  status: UserStatus;
+  firstName?: string;
+  lastName?: string;
+  birthDate?: Date;
+  phone?: string;
+  profileImage?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 @Injectable()
 export class AuthService {
@@ -31,9 +54,7 @@ export class AuthService {
     private mailService: EmailService,
   ) {}
 
-  private async generateTokens(
-    payload: JwtPayload,
-  ): Promise<{ access_token: string; refresh_token: string }> {
+  private async generateTokens(payload: JwtPayload): Promise<AuthTokens> {
     const access_token = await this.jwtService.signAsync(payload, {
       secret: this.config.get<string>('JWT_SECRET', 'fallback-secret'),
       expiresIn: TokenExpiration.ACCESS_TOKEN,
@@ -50,7 +71,7 @@ export class AuthService {
     };
   }
 
-  async register(dto: RegisterDto) {
+  async register(dto: RegisterDto): Promise<UserData> {
     // 1. Check if user exists
     const userExists = await this.prisma.userAccount.findFirst({
       where: {
@@ -124,18 +145,23 @@ export class AuthService {
         break;
     }
 
+    // Return user data without password
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password: _, ...result } = user;
+    const { password: _, ...userData } = user;
 
-    return ResponseUtil.success(
-      result,
-      'User registered successfully',
-      undefined,
-      HttpStatus.CREATED,
-    );
+    // Convert null values to undefined to match UserData interface
+    const result: UserData = {
+      ...userData,
+      lastName: userData.lastName ?? undefined,
+      birthDate: userData.birthDate ?? undefined,
+      phone: userData.phone ?? undefined,
+      profileImage: userData.profileImage ?? undefined,
+    };
+
+    return result;
   }
 
-  async login(dto: LoginDto, meta: MetaData): Promise<ApiResponse<authResponse>> {
+  async login(dto: LoginDto, meta: MetaData): Promise<LoginResult> {
     // check if user exists
     const user = await this.prisma.userAccount.findFirst({
       where: {
@@ -178,19 +204,14 @@ export class AuthService {
       },
     });
 
-    return ResponseUtil.success(
-      {
-        user: payload,
-        access_token,
-        refresh_token,
-      },
-      'Login successful',
-      undefined,
-      HttpStatus.OK,
-    );
+    return {
+      user: payload,
+      access_token,
+      refresh_token,
+    };
   }
 
-  async logout(refreshToken?: string) {
+  async logout(refreshToken?: string): Promise<void> {
     const currentSession = await this.prisma.session.findUnique({ where: { token: refreshToken } });
 
     if (currentSession) {
@@ -202,11 +223,9 @@ export class AuthService {
         },
       });
     }
-
-    return ResponseUtil.success(null, 'Logged out successfully');
   }
 
-  async refreshTokens(refreshToken: string, meta: MetaData): Promise<ApiResponse<authResponse>> {
+  async refreshTokens(refreshToken: string, meta: MetaData): Promise<LoginResult> {
     try {
       const existingSession = await this.prisma.session.findUnique({
         where: { token: refreshToken },
@@ -230,8 +249,6 @@ export class AuthService {
       const payload: JwtPayload = await this.jwtService.verifyAsync(refreshToken, {
         secret: this.config.get<string>('JWT_REFRESH_SECRET', 'fallback-secret-refresh'),
       });
-
-      //console.log(payload);
 
       const user = await this.prisma.userAccount.findUnique({
         where: { id: payload.sub, isDeleted: false },
@@ -271,16 +288,11 @@ export class AuthService {
         }),
       ]);
 
-      return ResponseUtil.success(
-        {
-          user: newPayload,
-          access_token,
-          refresh_token,
-        },
-        'Token refreshed successfully',
-        undefined,
-        HttpStatus.OK,
-      );
+      return {
+        user: newPayload,
+        access_token,
+        refresh_token,
+      };
     } catch (error: unknown) {
       // Gestion spécifique pour les tokens expirés
       if (error instanceof TokenExpiredError) {
@@ -329,8 +341,7 @@ export class AuthService {
       }
     }
 
-    // Always respond with 202 to prevent email enumeration
-    return;
+    // Always respond with void to prevent email enumeration
   }
 
   // valid reset token
@@ -399,8 +410,6 @@ export class AuthService {
       userName: user.firstName || user.username,
       changeDate: new Date(),
     });
-
-    return;
   }
 
   // change password when logged in
@@ -440,7 +449,5 @@ export class AuthService {
       userName: user.firstName || user.username,
       changeDate: new Date(),
     });
-
-    return;
   }
 }

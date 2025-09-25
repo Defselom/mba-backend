@@ -43,7 +43,6 @@ export class CreateUserAccountDto {
   firstName: string;
 
   @ApiPropertyOptional({ example: 'Doe', maxLength: 100 })
-  @IsOptional()
   @IsString()
   @MaxLength(100)
   lastName?: string;

@@ -7,7 +7,6 @@ import {
   Req,
   Res,
   UnauthorizedException,
-  Headers,
   UseGuards,
   Get,
   Param,
@@ -38,7 +37,7 @@ export class AuthController {
   ) {}
 
   @Post('login')
-  @HttpCode(200)
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'User login' })
   @ApiResponse({
     status: 200,
@@ -59,20 +58,21 @@ export class AuthController {
       deviceType: new UAParser(req.headers['user-agent']).getDevice().type || 'desktop',
     };
 
-    const result = await this.authService.login(dto, meta);
-    const { access_token, refresh_token } = result.data;
+    const loginResult = await this.authService.login(dto, meta);
+    const { access_token, refresh_token } = loginResult;
 
     const isProduction = this.config.get<string>('NODE_ENV') === 'production';
 
     setAuthCookies(res, { access_token, refresh_token }, isProduction);
 
-    return {
-      ...result,
+    return ResponseUtil.success({
       data: {
-        ...result.data,
+        ...loginResult,
         refresh_token: undefined,
       },
-    };
+      message: 'Login successful',
+      status: HttpStatus.OK,
+    });
   }
 
   @Post('register')
@@ -86,10 +86,16 @@ export class AuthController {
     description: 'User registered successfully',
     example: RegisterExample,
   })
-  register(@Body() dto: dto_1.RegisterDto) {
+  async register(@Body() dto: dto_1.RegisterDto) {
     console.log(dto);
 
-    return this.authService.register(dto);
+    const userData = await this.authService.register(dto);
+
+    return ResponseUtil.success({
+      data: userData,
+      message: 'User registered successfully',
+      status: HttpStatus.CREATED,
+    });
   }
 
   @Post('logout')
@@ -101,7 +107,7 @@ export class AuthController {
     description: 'Logs out the user and invalidates the refresh token.',
   })
   @ApiResponse({ status: 200, description: 'User logged out successfully' })
-  logout(@Res({ passthrough: true }) res: Response, @Req() request: Request) {
+  async logout(@Res({ passthrough: true }) res: Response, @Req() request: Request) {
     const cookies = request.cookies as Record<string, string | undefined>;
 
     const refreshToken = cookies?.refresh_token;
@@ -112,13 +118,19 @@ export class AuthController {
 
     console.log('refresh token:', refreshToken);
 
+    await this.authService.logout(refreshToken);
+
     clearAuthCookies(res);
 
-    return this.authService.logout(refreshToken);
+    return ResponseUtil.success({
+      data: null,
+      message: 'Logged out successfully',
+      status: HttpStatus.OK,
+    });
   }
 
   @Post('refresh')
-  @HttpCode(200)
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Refresh access token',
     description:
@@ -153,7 +165,7 @@ export class AuthController {
       deviceType: new UAParser(req.headers['user-agent']).getDevice().type || 'desktop',
     };
 
-    const result = await this.authService.refreshTokens(refreshToken, meta);
+    const refreshResult = await this.authService.refreshTokens(refreshToken, meta);
 
     // Pass only the tokens and a boolean for production mode
     const isProduction = this.config.get('NODE_ENV') === 'production';
@@ -161,25 +173,26 @@ export class AuthController {
     setAuthCookies(
       res,
       {
-        access_token: result.data.access_token,
-        refresh_token: result.data.refresh_token,
+        access_token: refreshResult.access_token,
+        refresh_token: refreshResult.refresh_token,
       },
       isProduction,
     );
 
     // Return only the access token, exclude refresh token from response
-    return {
-      ...result,
+    return ResponseUtil.success({
       data: {
-        ...result.data,
+        ...refreshResult,
         refresh_token: undefined,
       },
-    };
+      message: 'Tokens refreshed successfully',
+      status: HttpStatus.OK,
+    });
   }
 
   // request password reset: generate a token, email and always respond 202
   @Post('forgot-password')
-  @HttpCode(202)
+  @HttpCode(HttpStatus.ACCEPTED)
   @ApiOperation({
     summary: 'Request password reset',
     description:
@@ -190,13 +203,19 @@ export class AuthController {
     description:
       'If the email exists, a password reset link has been sent. Please check your email.',
   })
-  async forgotPassword(@Body() dto: dto_1.ForgotPasswordDto): Promise<void> {
+  async forgotPassword(@Body() dto: dto_1.ForgotPasswordDto) {
     await this.authService.requestPasswordReset(dto.email);
+
+    return ResponseUtil.success({
+      data: null,
+      message: 'If the email exists, a password reset link has been sent. Please check your email.',
+      status: HttpStatus.ACCEPTED,
+    });
   }
 
   // valid reset token
   @Get('password/reset/:token/validate')
-  @HttpCode(HttpStatus.NO_CONTENT)
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Validate password reset token',
     description: 'Checks if the provided password reset token is valid and not expired.',
@@ -227,8 +246,14 @@ export class AuthController {
       },
     },
   })
-  async validateResetToken(@Param('token') token: string): Promise<void> {
+  async validateResetToken(@Param('token') token: string) {
     await this.authService.validateResetToken(token);
+
+    return ResponseUtil.success({
+      data: null,
+      message: 'Password reset token is valid',
+      status: HttpStatus.OK,
+    });
   }
 
   // reset password using the token
@@ -274,12 +299,11 @@ export class AuthController {
   async resetPassword(@Body() dto: dto_1.ResetPasswordDto) {
     await this.authService.resetPassword(dto.token, dto.newPassword);
 
-    return ResponseUtil.success(
-      undefined,
-      'Password has been reset successfully',
-      undefined,
-      HttpStatus.OK,
-    );
+    return ResponseUtil.success({
+      data: null,
+      message: 'Password has been reset successfully',
+      status: HttpStatus.OK,
+    });
   }
 
   // change password while logged in
@@ -326,11 +350,10 @@ export class AuthController {
   async changePassword(@Body() dto: dto_1.ChangePasswordDto, @GetUser() user: dto_1.LoggedInUser) {
     await this.authService.changePassword(user.id, dto.oldPassword, dto.newPassword);
 
-    return ResponseUtil.success(
-      undefined,
-      'Password has been changed successfully',
-      undefined,
-      HttpStatus.OK,
-    );
+    return ResponseUtil.success({
+      data: null,
+      message: 'Password has been changed successfully',
+      status: HttpStatus.OK,
+    });
   }
 }
