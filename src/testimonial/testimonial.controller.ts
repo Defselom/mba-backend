@@ -42,19 +42,25 @@ export class TestimonialController {
   async findAll(@Query() query: QueryTestimonialDto) {
     const result = await this.service.findAll(query);
 
-    return ResponseUtil.success(
-      result,
-      'Testimonials retrieved successfully',
-      undefined,
-      HttpStatus.OK,
-    );
+    return ResponseUtil.paginated({
+      data: result.items,
+      total: result.meta.total,
+      page: query.page ?? 1,
+      limit: query.limit ?? 10,
+      message: 'Testimonials retrieved successfully',
+    });
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a testimonial by id' })
   @ApiResponse({ status: 200, description: 'The testimonial', type: CreateTestimonialDto })
   async findOne(@Param('id') id: string) {
-    return this.service.findOne(id);
+    const testimonial = await this.service.findOne(id);
+
+    return ResponseUtil.success({
+      data: testimonial,
+      message: 'Testimonial retrieved successfully',
+    });
   }
 
   /** Authenticated Participant: create testimonial */
@@ -67,7 +73,13 @@ export class TestimonialController {
     type: CreateTestimonialDto,
   })
   async create(@GetUser('id') userId: string, @Body() dto: CreateTestimonialDto) {
-    return this.service.create(userId, dto);
+    const testimonial = await this.service.create(userId, dto);
+
+    return ResponseUtil.success({
+      data: testimonial,
+      message: 'Testimonial created successfully',
+      status: HttpStatus.CREATED,
+    });
   }
 
   /** Author can update their pending testimonial */
@@ -80,7 +92,12 @@ export class TestimonialController {
     @GetUser('id') userId: string,
     @Body() dto: UpdateTestimonialDto,
   ) {
-    return this.service.updateAsAuthor(id, userId, dto);
+    const testimonial = await this.service.updateAsAuthor(id, userId, dto);
+
+    return ResponseUtil.success({
+      data: testimonial,
+      message: 'Testimonial updated successfully',
+    });
   }
 
   /** Author can delete their pending testimonial */
@@ -92,12 +109,10 @@ export class TestimonialController {
   async remove(@Param('id') id: string, @GetUser('id') userId: string) {
     await this.service.removeAsAuthor(id, userId);
 
-    return ResponseUtil.success(
-      undefined,
-      'Testimonial deleted successfully',
-      undefined,
-      HttpStatus.ACCEPTED,
-    );
+    return ResponseUtil.success({
+      data: null,
+      message: 'Testimonial deleted successfully',
+    });
   }
 
   /** Admin/Moderator moderation endpoints */
@@ -108,12 +123,10 @@ export class TestimonialController {
   async approve(@Param('id') id: string) {
     await this.service.approve(id);
 
-    return ResponseUtil.success(
-      undefined,
-      'Testimonial approved successfully',
-      undefined,
-      HttpStatus.OK,
-    );
+    return ResponseUtil.success({
+      data: null,
+      message: 'Testimonial approved successfully',
+    });
   }
 
   @UseGuards(JwtGuard, RolesGuard)
@@ -123,12 +136,10 @@ export class TestimonialController {
   async reject(@Param('id') id: string) {
     await this.service.reject(id);
 
-    return ResponseUtil.success(
-      undefined,
-      'Testimonial rejected successfully',
-      undefined,
-      HttpStatus.OK,
-    );
+    return ResponseUtil.success({
+      data: null,
+      message: 'Testimonial rejected successfully',
+    });
   }
 
   @UseGuards(JwtGuard, RolesGuard)
@@ -139,11 +150,9 @@ export class TestimonialController {
   async adminRemove(@Param('id') id: string) {
     await this.service.removeAsAdmin(id);
 
-    return ResponseUtil.success(
-      undefined,
-      'Testimonial deleted successfully',
-      undefined,
-      HttpStatus.ACCEPTED,
-    );
+    return ResponseUtil.success({
+      data: null,
+      message: 'Testimonial deleted successfully',
+    });
   }
 }
