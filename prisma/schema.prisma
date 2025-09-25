@@ -1,9 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
   output   = "../generated/prisma"
@@ -88,20 +85,26 @@ enum RegistrationStatus {
 
 // ---------- USER & PROFILES ----------
 model UserAccount {
-  id            String        @id @default(cuid())
-  username      String        @unique @db.VarChar(50)
-  password      String?       @db.VarChar(255)
-  email         String        @unique @db.VarChar(150)
-  role          UserRole
-  status        UserStatus    @default(ACTIVE)
-  firstName     String        @db.VarChar(100)
-  lastName      String?       @db.VarChar(100)
-  birthDate     DateTime?     @db.Date
-  phone         String?       @db.VarChar(20)
-  profileImage  String?       @db.VarChar(255)
-  lastLogin     DateTime?     @db.Timestamptz(6)
-  createdAt     DateTime      @default(now()) @db.Timestamptz(6)
-  updatedAt     DateTime      @default(now()) @updatedAt @db.Timestamptz(6)
+  id           String     @id @default(cuid())
+  username     String     @unique @db.VarChar(50)
+  password     String?    @db.VarChar(255)
+  email        String     @unique @db.VarChar(150)
+  role         UserRole
+  status       UserStatus @default(ACTIVE)
+  firstName    String     @db.VarChar(100)
+  lastName     String?    @db.VarChar(100)
+  birthDate    DateTime?  @db.Date
+  phone        String?    @db.VarChar(20)
+  profileImage String?    @db.VarChar(255)
+  lastLogin    DateTime?  @db.Timestamptz(6)
+
+  // Soft delete
+  isDeleted   Boolean    @default(false)
+  deletedAt   DateTime?  @db.Timestamptz(6)
+  deletedById String?
+
+  createdAt   DateTime   @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime   @default(now()) @updatedAt @db.Timestamptz(6)
 
   // Profiles
   adminProfile        AdminProfile?
@@ -109,265 +112,359 @@ model UserAccount {
   moderatorProfile    ModeratorProfile?
   collaboratorProfile CollaboratorProfile?
   participantProfile  ParticipantProfile?
-  partnerProfile      PartnerProfile?
 
   // Relations
-  applications        Application[]
-  testimonials        Testimonial[]
+  testimonials         Testimonial[]
   personalizedSupports PersonalizedSupport[]
-  registrations       Registration[]
-  downloadedDocuments Document[]        @relation("UserDownloads")
-  uploadedSupports    Support[]
-  animatedWebinars    Webinar[]         @relation("AnimatedWebinars")
-  moderatedWebinars   Webinar[]         @relation("ModeratedWebinars")
-  collaboratedWebinars Webinar[]        @relation("CollaboratorWebinars")
-  partnerApplications Application[]     @relation("PartnerApplications")
-  sessions    Session[]
+  registrations        Registration[]
+  downloadedDocuments  Document[]            @relation("UserDownloads")
+  uploadedSupports     Support[]
+  animatedWebinars     Webinar[]             @relation("AnimatedWebinars")
+  moderatedWebinars    Webinar[]             @relation("ModeratedWebinars")
+  collaboratedWebinars Webinar[]             @relation("CollaboratorWebinars")
+  sessions             Session[]
+  PartnerApplication   PartnerApplication[]
+  PasswordResetToken   PasswordResetToken[]
 
   @@map("users")
+  @@index([isDeleted, deletedAt])
 }
 
 model AdminProfile {
-  id            String      @id @default(cuid())
-  userId        String      @unique
-  adminRights   String?     // List, JSON, or String[]
-  createdAt     DateTime    @default(now()) @db.Timestamptz(6)
-  updatedAt     DateTime    @default(now()) @updatedAt @db.Timestamptz(6)
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  adminRights String? // List, JSON, or String[]
 
-  user          UserAccount @relation(fields: [userId], references: [id])
+  // Soft delete
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime? @db.Timestamptz(6)
+  deletedById String?
+
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  user UserAccount @relation(fields: [userId], references: [id])
 
   @@map("admin_profiles")
+  @@index([isDeleted, deletedAt])
 }
 
 model SpeakerProfile {
-  id            String   @id @default(cuid())
-  userId        String   @unique
-  academicLevel String?
-  currentPosition String?
-  motivation    String?
-  legalDomains  String? // JSON or String[]
-  professionalPhoto String?
-  biography     String?
+  id                  String      @id @default(cuid())
+  userId              String      @unique
+  academicLevel       String?
+  currentPosition     String?
+  motivation          String?
+  legalDomains        String? // JSON or String[]
+  professionalPhoto   String?
+  biography           String?
   scheduleConstraints String?
   animationExperience String?
-  createdAt     DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt     DateTime @default(now()) @updatedAt @db.Timestamptz(6)
-  user          UserAccount @relation(fields: [userId], references: [id])
+
+  // Soft delete
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime? @db.Timestamptz(6)
+  deletedById String?
+
+  createdAt           DateTime    @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime    @default(now()) @updatedAt @db.Timestamptz(6)
+  user                UserAccount @relation(fields: [userId], references: [id])
 
   @@map("speaker_profiles")
+  @@index([isDeleted, deletedAt])
 }
 
 model ModeratorProfile {
-  id            String   @id @default(cuid())
-  userId        String   @unique
-  currentJob    String?
-  academicLevel String?
-  moderationExperience String?
+  id                       String      @id @default(cuid())
+  userId                   String      @unique
+  currentJob               String?
+  academicLevel            String?
+  moderationExperience     String?
   coordinationAvailability String?
-  professionalPhoto String?
-  biography     String?
-  comfortDomains String? // JSON or String[]
-  createdAt     DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt     DateTime @default(now()) @updatedAt @db.Timestamptz(6)
-  user          UserAccount @relation(fields: [userId], references: [id])
+  professionalPhoto        String?
+  biography                String?
+  comfortDomains           String? // JSON or String[]
+
+  // Soft delete
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime? @db.Timestamptz(6)
+  deletedById String?
+
+  createdAt                DateTime    @default(now()) @db.Timestamptz(6)
+  updatedAt                DateTime    @default(now()) @updatedAt @db.Timestamptz(6)
+  user                     UserAccount @relation(fields: [userId], references: [id])
 
   @@map("moderator_profiles")
+  @@index([isDeleted, deletedAt])
 }
 
 model CollaboratorProfile {
-  id            String   @id @default(cuid())
-  userId        String   @unique
-  academicLevel String?
-  currentStatus String?
+  id                String      @id @default(cuid())
+  userId            String      @unique
+  academicLevel     String?
+  currentStatus     String?
   collaborationType String?
-  motivations   String?
-  otherCommitments String?
-  createdAt     DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt     DateTime @default(now()) @updatedAt @db.Timestamptz(6)
-  user          UserAccount @relation(fields: [userId], references: [id])
+  motivations       String?
+  otherCommitments  String?
+
+  // Soft delete
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime? @db.Timestamptz(6)
+  deletedById String?
+
+  createdAt         DateTime    @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime    @default(now()) @updatedAt @db.Timestamptz(6)
+  user              UserAccount @relation(fields: [userId], references: [id])
 
   @@map("collaborator_profiles")
+  @@index([isDeleted, deletedAt])
 }
 
 model ParticipantProfile {
-  id            String   @id @default(cuid())
-  userId        String   @unique
-  academicLevel String?
-  discoveryChannel String?
+  id                      String      @id @default(cuid())
+  userId                  String      @unique
+  academicLevel           String?
+  discoveryChannel        String?
   participationMotivation String?
-  otherPlatforms String?
-  wishedLegalThemes String? // JSON or String[]
-  createdAt     DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt     DateTime @default(now()) @updatedAt @db.Timestamptz(6)
-  user          UserAccount @relation(fields: [userId], references: [id])
+  otherPlatforms          String?
+  wishedLegalThemes       String? // JSON or String[]
+
+  // Soft delete
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime? @db.Timestamptz(6)
+  deletedById String?
+
+  createdAt               DateTime    @default(now()) @db.Timestamptz(6)
+  updatedAt               DateTime    @default(now()) @updatedAt @db.Timestamptz(6)
+  user                    UserAccount @relation(fields: [userId], references: [id])
 
   @@map("participant_profiles")
+  @@index([isDeleted, deletedAt])
 }
 
-model PartnerProfile {
-  id            String   @id @default(cuid())
-  userId        String   @unique
-  structureName String?
-  occupiedPosition String?
-  partnershipType String?
-  providedExpertise String?
+model PartnerApplication {
+  id                      String            @id @default(cuid())
+  responsibleFirstName    String
+  responsibleLastName     String
+  responsibleEmail        String            @unique
+  structureName           String
+  occupiedPosition        String
+  partnershipType         String
+  providedExpertise       String
   collaborationExperience String?
-  createdAt     DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt     DateTime @default(now()) @updatedAt @db.Timestamptz(6)
-  user          UserAccount @relation(fields: [userId], references: [id])
+  phone                   String
+  status                  ApplicationStatus @default(PENDING)
 
-  @@map("partner_profiles")
+  // Soft delete
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime? @db.Timestamptz(6)
+  deletedById String?
+
+  adminComment            String?
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @default(now()) @updatedAt
+
+  // Relations
+  userId String?
+  user   UserAccount? @relation(fields: [userId], references: [id])
+
+  @@map("partner_applications")
+  @@index([isDeleted, deletedAt])
 }
-
-/* // ---------- VISITOR ----------
-model Visitor {
-  id             String    @id @default(cuid())
-  sessionId      String
-  visitDate      DateTime
-  consultedPages String?   // List as JSON if needed
-} */
 
 // ---------- WEBINAR ----------
 model Webinar {
-  id                String         @id @default(cuid())
-  title             String
-  description       String
-  dateTime          DateTime
-  duration          Int
-  legalTopic        String
-  maxCapacity       Int
-  status            WebinarStatus
-  accessLink        String?
-  createdAt         DateTime       @default(now()) @db.Timestamptz(6)
-  updatedAt         DateTime       @default(now()) @updatedAt @db.Timestamptz(6)
+  id          String        @id @default(cuid())
+  title       String
+  description String
+  dateTime    DateTime
+  duration    Int
+  legalTopic  String
+  maxCapacity Int
+  status      WebinarStatus @default(SCHEDULED)
+  accessLink  String?
+
+  // Soft delete
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime? @db.Timestamptz(6)
+  deletedById String?
+
+  createdAt   DateTime      @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime      @default(now()) @updatedAt @db.Timestamptz(6)
 
   // Relations
-  supports          Support[]
-  registrations     Registration[]
-  testimonials      Testimonial[]
-  animatedById      String?
-  animatedBy        UserAccount?   @relation("AnimatedWebinars", fields: [animatedById], references: [id])
-  moderatedById     String?
-  moderatedBy       UserAccount?   @relation("ModeratedWebinars", fields: [moderatedById], references: [id])
-  collaborators     UserAccount[]  @relation("CollaboratorWebinars")
+  supports      Support[]
+  registrations Registration[]
+  testimonials  Testimonial[]
+  animatedById  String?
+  animatedBy    UserAccount?   @relation("AnimatedWebinars", fields: [animatedById], references: [id])
+  moderatedById String?
+  moderatedBy   UserAccount?   @relation("ModeratedWebinars", fields: [moderatedById], references: [id])
+  collaborators UserAccount[]  @relation("CollaboratorWebinars")
+  tags          Tag[]          @relation("WebinarTags")
 
   @@map("webinars")
+  @@index([isDeleted, deletedAt])
+}
+
+model Tag {
+  id         String    @id @default(cuid())
+  name       String
+  slug       String    @unique
+  webinars   Webinar[] @relation("WebinarTags")
+
+  // Soft delete
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime? @db.Timestamptz(6)
+  deletedById String?
+
+  @@index([isDeleted, deletedAt])
 }
 
 // ---------- DOCUMENT ----------
 model Document {
-  id               String       @id @default(cuid())
-  title            String
-  type             DocumentType
-  file             String
-  publicationDate  DateTime
-  legalDomain      String
-  description      String?
-  sizeBytes        Int
-  createdAt        DateTime     @default(now()) @db.Timestamptz(6)
-  updatedAt        DateTime     @default(now()) @updatedAt @db.Timestamptz(6)
+  id              String       @id @default(cuid())
+  title           String
+  type            DocumentType
+  file            String
+  publicationDate DateTime
+  legalDomain     String
+  description     String?
+  sizeBytes       Int
+
+  // Soft delete
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime? @db.Timestamptz(6)
+  deletedById String?
+
+  createdAt       DateTime     @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime     @default(now()) @updatedAt @db.Timestamptz(6)
 
   // Relations
-  downloadedBy     UserAccount[] @relation("UserDownloads")
+  downloadedBy UserAccount[] @relation("UserDownloads")
 
   @@map("documents")
+  @@index([isDeleted, deletedAt])
 }
 
 // ---------- TESTIMONIAL ----------
 model Testimonial {
-  id             String         @id @default(cuid())
-  content        String
-  createdAt      DateTime       @default(now()) @db.Timestamptz(6)
-  status         ModerationStatus
-  rating         Int?
-  userId         String
-  user           UserAccount    @relation(fields: [userId], references: [id])
-  webinarId      String?
-  webinar        Webinar?       @relation(fields: [webinarId], references: [id])
+  id        String           @id @default(cuid())
+  content   String
+  status    ModerationStatus
+  rating    Int?
+
+  // Soft delete
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime? @db.Timestamptz(6)
+  deletedById String?
+
+  createdAt DateTime         @default(now()) @db.Timestamptz(6)
+  userId    String
+  user      UserAccount      @relation(fields: [userId], references: [id])
+  webinarId String?
+  webinar   Webinar?         @relation(fields: [webinarId], references: [id])
 
   @@map("testimonials")
-}
-
-// ---------- APPLICATION (Candidature) ----------
-model Application {
-  id             String           @id @default(cuid())
-  type           ApplicationType
-  status         ApplicationStatus
-  createdAt      DateTime         @default(now()) @db.Timestamptz(6)
-  formData       String?
-  adminComment   String?
-  userId         String
-  user           UserAccount      @relation(fields: [userId], references: [id])
-  partnerId      String?
-  partner        UserAccount?     @relation("PartnerApplications", fields: [partnerId], references: [id])
-
-  @@map("applications")
+  @@index([isDeleted, deletedAt])
 }
 
 // ---------- PERSONALIZED SUPPORT ----------
 model PersonalizedSupport {
-  id                   String           @id @default(cuid())
-  type                 PersonalizedSupportType
-  legalDomains         String? // JSON if you want a list
-  frequency            String?
-  scheduleConstraints  String?
-  communicationStyle   String?
-  status               ModerationStatus
-  estimatedCost        Float?
-  createdAt            DateTime         @default(now()) @db.Timestamptz(6)
-  updatedAt            DateTime         @default(now()) @updatedAt @db.Timestamptz(6)
-  userId               String
-  user                 UserAccount      @relation(fields: [userId], references: [id])
+  id                  String                  @id @default(cuid())
+  type                PersonalizedSupportType
+  legalDomains        String? // JSON if you want a list
+  frequency           String?
+  scheduleConstraints String?
+  communicationStyle  String?
+  status              ModerationStatus
+  estimatedCost       Float?
+
+  // Soft delete
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime? @db.Timestamptz(6)
+  deletedById String?
+
+  createdAt           DateTime                @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime                @default(now()) @updatedAt @db.Timestamptz(6)
+  userId              String
+  user                UserAccount             @relation(fields: [userId], references: [id])
 
   @@map("personalized_supports")
+  @@index([isDeleted, deletedAt])
 }
 
 // ---------- REGISTRATION ----------
 model Registration {
-  id                  String         @id @default(cuid())
-  registrationDate    DateTime       @default(now()) @db.Timestamptz(6)
-  status              RegistrationStatus
-  userId              String
-  user                UserAccount    @relation(fields: [userId], references: [id])
-  webinarId           String
-  webinar             Webinar        @relation(fields: [webinarId], references: [id])
-  
+  id               String             @id @default(cuid())
+  registrationDate DateTime           @default(now()) @db.Timestamptz(6)
+  status           RegistrationStatus
+  userId           String
+  user             UserAccount        @relation(fields: [userId], references: [id])
+  webinarId        String
+  webinar          Webinar            @relation(fields: [webinarId], references: [id])
+
+  // Soft delete
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime? @db.Timestamptz(6)
+  deletedById String?
+
   @@unique([webinarId, userId])
   @@map("registrations")
+  @@index([isDeleted, deletedAt])
 }
 
 // ---------- SUPPORT (Document upload) ----------
 model Support {
-  id              String         @id @default(cuid())
-  title           String
-  file            String
-  type            SupportType
-  uploadDate      DateTime       @default(now()) @db.Timestamptz(6)
-  webinarId       String?
-  webinar         Webinar?       @relation(fields: [webinarId], references: [id])
-  uploadedById    String?
-  uploadedBy      UserAccount?   @relation(fields: [uploadedById], references: [id])
+  id           String       @id @default(cuid())
+  title        String
+  file         String
+  type         SupportType
+
+  // Soft delete
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime? @db.Timestamptz(6)
+  deletedById String?
+
+  createdAt    DateTime     @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime     @default(now()) @updatedAt @db.Timestamptz(6)
+  webinarId    String?
+  webinar      Webinar?     @relation(fields: [webinarId], references: [id])
+  uploadedById String?
+  uploadedBy   UserAccount? @relation(fields: [uploadedById], references: [id])
 
   @@map("supports")
+  @@index([isDeleted, deletedAt])
 }
 
-
 model Session {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  token     String   @unique @db.Text
-  userAgent String?  @map("user_agent") @db.Text
-  ipAddress String?  @map("ip_address") @db.VarChar(45)
-  deviceType String?  @map("device_type") @db.VarChar(100)
-  isActive  Boolean  @default(true) @map("is_active")
-  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(6)
+  id         String    @id @default(cuid())
+  userId     String    @map("user_id")
+  token      String    @unique @db.Text
+  userAgent  String?   @map("user_agent") @db.Text
+  ipAddress  String?   @map("ip_address") @db.VarChar(45)
+  deviceType String?   @map("device_type") @db.VarChar(100)
+  isActive   Boolean   @default(true) @map("is_active")
+  revokedAt  DateTime? @map("revoked_at") @db.Timestamptz(6)
   lastUsedAt DateTime? @map("last_used_at") @db.Timestamptz(6)
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz(6)
 
   // Relations
   user UserAccount @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("session")
+}
+
+model PasswordResetToken {
+  id        String      @id @default(cuid())
+  token     String      @unique
+  userId    String
+  user      UserAccount @relation(fields: [userId], references: [id])
+  expiresAt DateTime
+  used      Boolean     @default(false)
+  createdAt DateTime    @default(now())
+
+  @@map("password_reset_tokens")
 }
 

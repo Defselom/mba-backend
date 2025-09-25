@@ -14,16 +14,11 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api/v1');
 
-  const allowedOrigins =
-    process.env.NODE_ENV === 'production'
-      ? ['https://mba-frontend-3gl7.vercel.app', 'http://localhost:3000', 'http://127.0.0.1:3000']
-      : [
-          'http://localhost:3000',
-          'http://127.0.0.1:3000',
-          'http://192.168.1.83:3000',
-          'http://192.168.1.87:3000',
-          'https://mba-frontend-3gl7.vercel.app/',
-        ];
+  const allowedOrigins = [
+    `${process.env.FRONTEND_URL}`,
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+  ];
 
   app.enableCors({
     origin: allowedOrigins,

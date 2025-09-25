@@ -1,0 +1,18 @@
+<h1>{{subject}}</h1>
+
+<p>Bonjour {{userName}},</p>
+
+<div class="message-content">
+    {{{message}}}
+</div>
+
+{{#if actionUrl}}
+    {{> button url=actionUrl text=actionText}}
+{{/if}}
+
+{{#if isImportant}}
+    {{> alert type="info" title="📌 Information importante" message="Cette notification nécessite votre attention. N'hésitez pas à nous contacter si vous avez des questions."}}
+{{/if}}
+
+<p>Cordialement,</p>
+<p><strong>L'équipe MBA</strong></p>

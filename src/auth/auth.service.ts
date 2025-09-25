@@ -1,7 +1,6 @@
 import {
   BadRequestException,
   ConflictException,
-  HttpStatus,
   Injectable,
   NotFoundException,
   UnauthorizedException,
@@ -11,14 +10,40 @@ import { ConfigService } from '@nestjs/config';
 import { JsonWebTokenError, JwtService, NotBeforeError, TokenExpiredError } from '@nestjs/jwt';
 
 import { UserRole, UserStatus } from '@/../generated/prisma';
-import { TokenExpiration } from '@/auth/constants';
+import { PasswordResetTokenExpiration, TokenExpiration } from '@/auth/constants';
 import { JwtPayload, LoginDto } from '@/auth/dto';
 import { RegisterDto } from '@/auth/dto/register.dto';
-import { MetaData, authResponse } from '@/auth/interface';
+import { MetaData } from '@/auth/interface';
+import { generateResetToken, hashResetToken } from '@/auth/utils';
 import { hashPassword, verifyPassword } from '@/auth/utils/handlePassword';
+import { EmailService } from '@/email/email.service';
 import { PrismaService } from '@/prisma/prisma.service';
-import { ApiResponse } from '@/shared/interfaces';
-import { ResponseUtil } from '@/shared/utils';
+
+export interface AuthTokens {
+  access_token: string;
+  refresh_token: string;
+}
+
+export interface LoginResult {
+  user: JwtPayload;
+  access_token: string;
+  refresh_token: string;
+}
+
+export interface UserData {
+  id: string;
+  email: string;
+  username: string;
+  role: UserRole;
+  status: UserStatus;
+  firstName?: string;
+  lastName?: string;
+  birthDate?: Date;
+  phone?: string;
+  profileImage?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 @Injectable()
 export class AuthService {
@@ -26,11 +51,10 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private config: ConfigService,
+    private mailService: EmailService,
   ) {}
 
-  private async generateTokens(
-    payload: JwtPayload,
-  ): Promise<{ access_token: string; refresh_token: string }> {
+  private async generateTokens(payload: JwtPayload): Promise<AuthTokens> {
     const access_token = await this.jwtService.signAsync(payload, {
       secret: this.config.get<string>('JWT_SECRET', 'fallback-secret'),
       expiresIn: TokenExpiration.ACCESS_TOKEN,
@@ -47,11 +71,12 @@ export class AuthService {
     };
   }
 
-  async register(dto: RegisterDto) {
+  async register(dto: RegisterDto): Promise<UserData> {
     // 1. Check if user exists
     const userExists = await this.prisma.userAccount.findFirst({
       where: {
         OR: [{ email: dto.email }, { username: dto.username }],
+        isDeleted: false,
       },
     });
 
@@ -69,8 +94,7 @@ export class AuthService {
         username: dto.username,
         password: hashedPassword,
         role: dto.role,
-        status:
-          dto.role == UserRole.PARTICIPANT ? UserStatus.ACTIVE : UserStatus.PENDING_VALIDATION,
+        status: UserStatus.PENDING_VALIDATION,
         firstName: dto.firstName,
         lastName: dto.lastName,
         birthDate: dto.birthDate ? new Date(dto.birthDate) : undefined,
@@ -121,27 +145,38 @@ export class AuthService {
         break;
     }
 
+    // Return user data without password
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password: _, ...result } = user;
+    const { password: _, ...userData } = user;
 
-    return ResponseUtil.success(
-      result,
-      'User registered successfully',
-      undefined,
-      HttpStatus.CREATED,
-    );
+    // Convert null values to undefined to match UserData interface
+    const result: UserData = {
+      ...userData,
+      lastName: userData.lastName ?? undefined,
+      birthDate: userData.birthDate ?? undefined,
+      phone: userData.phone ?? undefined,
+      profileImage: userData.profileImage ?? undefined,
+    };
+
+    return result;
   }
 
-  async login(dto: LoginDto, meta: MetaData): Promise<ApiResponse<authResponse>> {
+  async login(dto: LoginDto, meta: MetaData): Promise<LoginResult> {
     // check if user exists
     const user = await this.prisma.userAccount.findFirst({
       where: {
         OR: [{ email: dto.email }, { username: dto.username }],
+        isDeleted: false,
       },
     });
 
     if (!user) {
       throw new NotFoundException('User not found');
+    }
+
+    // Vérifier que l'utilisateur n'est pas supprimé (soft delete)
+    if (user.isDeleted) {
+      throw new UnauthorizedException('Account is no longer available');
     }
 
     // check password
@@ -169,19 +204,14 @@ export class AuthService {
       },
     });
 
-    return ResponseUtil.success(
-      {
-        user: payload,
-        access_token,
-        refresh_token,
-      },
-      'Login successful',
-      undefined,
-      HttpStatus.OK,
-    );
+    return {
+      user: payload,
+      access_token,
+      refresh_token,
+    };
   }
 
-  async logout(refreshToken?: string) {
+  async logout(refreshToken?: string): Promise<void> {
     const currentSession = await this.prisma.session.findUnique({ where: { token: refreshToken } });
 
     if (currentSession) {
@@ -193,11 +223,9 @@ export class AuthService {
         },
       });
     }
-
-    return ResponseUtil.success(null, 'Logged out successfully');
   }
 
-  async refreshTokens(refreshToken: string, meta: MetaData): Promise<ApiResponse<authResponse>> {
+  async refreshTokens(refreshToken: string, meta: MetaData): Promise<LoginResult> {
     try {
       const existingSession = await this.prisma.session.findUnique({
         where: { token: refreshToken },
@@ -222,14 +250,17 @@ export class AuthService {
         secret: this.config.get<string>('JWT_REFRESH_SECRET', 'fallback-secret-refresh'),
       });
 
-      //console.log(payload);
-
       const user = await this.prisma.userAccount.findUnique({
-        where: { id: payload.sub },
+        where: { id: payload.sub, isDeleted: false },
       });
 
       if (!user) {
         throw new UnauthorizedException('User not found');
+      }
+
+      // Vérifier que l'utilisateur n'est pas supprimé (soft delete)
+      if (user.isDeleted) {
+        throw new UnauthorizedException('Account is no longer available');
       }
 
       const newPayload = {
@@ -257,16 +288,11 @@ export class AuthService {
         }),
       ]);
 
-      return ResponseUtil.success(
-        {
-          user: newPayload,
-          access_token,
-          refresh_token,
-        },
-        'Token refreshed successfully',
-        undefined,
-        HttpStatus.OK,
-      );
+      return {
+        user: newPayload,
+        access_token,
+        refresh_token,
+      };
     } catch (error: unknown) {
       // Gestion spécifique pour les tokens expirés
       if (error instanceof TokenExpiredError) {
@@ -284,5 +310,144 @@ export class AuthService {
 
       throw new UnauthorizedException('Invalid refresh token');
     }
+  }
+
+  // request password reset: generate a token, email and always respond 202
+  async requestPasswordReset(email: string): Promise<void> {
+    const user = await this.prisma.userAccount.findUnique({
+      where: { email, isDeleted: false },
+    });
+
+    if (user) {
+      // Generate token and its hash
+      const { tokenPlain, tokenHash } = generateResetToken();
+
+      // Save hashed token to DB with expiration (1 hour)
+      await this.prisma.passwordResetToken.create({
+        data: {
+          userId: user.id,
+          token: tokenHash,
+          expiresAt: new Date(Date.now() + PasswordResetTokenExpiration.RESET_DURATION), // 30 minutes
+        },
+      });
+
+      // Send email with plain token
+      try {
+        await this.mailService.sendPasswordResetEmail(user.email, tokenPlain);
+      } catch (error) {
+        console.error('Error sending password reset email:', error);
+
+        // Optionally, you might want to clear the token if email fails
+      }
+    }
+
+    // Always respond with void to prevent email enumeration
+  }
+
+  // valid reset token
+  async validateResetToken(token: string): Promise<void> {
+    const tokenHash = hashResetToken(token);
+
+    const resetToken = await this.prisma.passwordResetToken.findFirst({
+      where: { token: tokenHash },
+    });
+
+    if (!resetToken) {
+      throw new NotFoundException('Password reset token not valid');
+    }
+
+    if (resetToken.expiresAt < new Date()) {
+      throw new BadRequestException('Invalid or expired password reset token');
+    }
+
+    if (resetToken.used)
+      throw new BadRequestException('This password reset token has already been used');
+  }
+
+  // change password using reset token
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    const tokenHash = hashResetToken(token);
+
+    const resetToken = await this.prisma.passwordResetToken.findFirst({
+      where: { token: tokenHash },
+    });
+
+    if (!resetToken) {
+      throw new NotFoundException('Password reset token not valid');
+    }
+
+    if (resetToken.expiresAt < new Date()) {
+      throw new BadRequestException('Invalid or expired password reset token');
+    }
+
+    if (resetToken.used)
+      throw new BadRequestException('This password reset token has already been used');
+
+    const user = await this.prisma.userAccount.findUnique({
+      where: { id: resetToken.userId, isDeleted: false },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const hashedPassword = await hashPassword(newPassword);
+
+    await Promise.all([
+      this.prisma.userAccount.update({
+        where: { id: user.id },
+        data: { password: hashedPassword },
+      }),
+      this.prisma.passwordResetToken.update({
+        where: { id: resetToken.id },
+        data: { used: true },
+      }),
+    ]);
+
+    // Notify user of password change
+    await this.mailService.sendPasswordChangedEmail({
+      to: user.email,
+      userName: user.firstName || user.username,
+      changeDate: new Date(),
+    });
+  }
+
+  // change password when logged in
+  async changePassword(userId: string, oldPassword: string, newPassword: string): Promise<void> {
+    const user = await this.prisma.userAccount.findUnique({
+      where: { id: userId, isDeleted: false },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (!user.password) {
+      throw new BadRequestException('User does not have a password set');
+    }
+
+    if (oldPassword === newPassword) {
+      throw new BadRequestException('New password must be different from old password');
+    }
+
+    const isOldPasswordValid = await verifyPassword(oldPassword, user.password);
+
+    if (!isOldPasswordValid) {
+      throw new UnauthorizedException('Old password is incorrect');
+    }
+
+    const hashedNewPassword = await hashPassword(newPassword);
+
+    await this.prisma.userAccount.update({
+      where: { id: user.id },
+      data: { password: hashedNewPassword },
+    });
+
+    // Notify user of password change
+    await this.mailService.sendPasswordChangedEmail({
+      to: user.email,
+      userName: user.firstName || user.username,
+      changeDate: new Date(),
+    });
   }
 }

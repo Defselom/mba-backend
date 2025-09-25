@@ -10,6 +10,7 @@ import {
   Post,
   Put,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 
@@ -17,11 +18,12 @@ import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 import type { Request } from 'express';
 
+import { UserRole } from '@/../generated/prisma';
 import { JwtGuard, RolesGuard } from '@/auth/guard';
 import { Roles } from '@/decorator';
 import { PaginationDto } from '@/shared/dto';
 import { ApiResponse as IApiResponse } from '@/shared/interfaces';
-import { ResponseUtil } from '@/shared/utils';
+import { generateBaseUrl, ResponseUtil } from '@/shared/utils';
 import {
   addRegistrationDoc,
   getAllRegistrationDoc,
@@ -36,7 +38,7 @@ import {
   WebinarRegistrationDto,
 } from '@/webinaire/dto/index.dto';
 import { WebinarService } from '@/webinaire/webinar.service';
-import { UserRole } from '@/../generated/prisma';
+
 @Controller('webinars')
 @UseGuards(JwtGuard, RolesGuard)
 @ApiBearerAuth()
@@ -52,12 +54,11 @@ export class WebinarController {
   async create(@Body() dto: CreateWebinarDto) {
     const webinar = await this.webinarService.create(dto);
 
-    return ResponseUtil.success(
-      webinar,
-      'Webinar created successfully',
-      undefined,
-      HttpStatus.CREATED,
-    );
+    return ResponseUtil.success({
+      data: webinar,
+      message: 'Webinar created successfully',
+      status: HttpStatus.CREATED,
+    });
   }
 
   // [ADMIN] Update a webinar (if not STARTED/ENDED/CANCELLED)
@@ -69,7 +70,10 @@ export class WebinarController {
   async update(@Param('id') id: string, @Body() dto: UpdateWebinarDto) {
     const webinar = await this.webinarService.update(id, dto);
 
-    return ResponseUtil.success(webinar, 'Webinar updated successfully');
+    return ResponseUtil.success({
+      data: webinar,
+      message: 'Webinar updated successfully',
+    });
   }
 
   @Patch(':id/handle-status')
@@ -80,7 +84,10 @@ export class WebinarController {
   async handleStatus(@Param('id') id: string, @Body() dto: UpdateWebinarStatusDto) {
     await this.webinarService.handleStatus(id, dto.status);
 
-    return ResponseUtil.success(null, 'Webinar status handled successfully');
+    return ResponseUtil.success({
+      data: null,
+      message: 'Webinar status updated successfully',
+    });
   }
 
   // [ADMIN] Delete a webinar (out of history/statistics)
@@ -92,7 +99,10 @@ export class WebinarController {
   async delete(@Param('id') id: string): Promise<IApiResponse<null>> {
     await this.webinarService.delete(id);
 
-    return ResponseUtil.success(null, 'Webinar deleted successfully');
+    return ResponseUtil.success({
+      data: null,
+      message: 'Webinar deleted successfully',
+    });
   }
 
   // [ADMIN] List/paginate all webinars (for management)
@@ -107,13 +117,18 @@ export class WebinarController {
     isArray: true,
     example: getAllWebinarsDoc,
   })
-  async findAll(@Query() pagination: PaginationDto) {
-    const { data, total } = await this.webinarService.findAll(pagination);
+  async findAll(@Query() pagination: PaginationDto, @Req() request: Request) {
+    const result = await this.webinarService.findAll(pagination);
 
-    return ResponseUtil.success(data, 'Webinars retrieved successfully', {
-      total,
-      page: pagination.page || 1,
-      limit: pagination.limit || 10,
+    const baseUrl = generateBaseUrl(request);
+
+    return ResponseUtil.paginated({
+      data: result.data,
+      total: result.total,
+      page: pagination.page ?? 1,
+      limit: pagination.limit ?? 10,
+      message: 'Webinars retrieved successfully',
+      baseUrl,
     });
   }
 
@@ -129,7 +144,10 @@ export class WebinarController {
   ) {
     const webinar = await this.webinarService.assignActors(id, dto);
 
-    return ResponseUtil.success(webinar, 'Assignment completed successfully');
+    return ResponseUtil.success({
+      data: webinar,
+      message: 'Actors assigned successfully',
+    });
   }
 
   // [ADMIN] View registrations for a webinar
@@ -145,7 +163,10 @@ export class WebinarController {
   async getAllRegistrations(): Promise<IApiResponse<WebinarRegistrationDto[]>> {
     const registrations = await this.webinarService.getAllRegistrations();
 
-    return ResponseUtil.success(registrations, 'Registrations retrieved successfully');
+    return ResponseUtil.success({
+      data: registrations,
+      message: 'Registrations retrieved successfully',
+    });
   }
 
   // [ADMIN] View registrations for a webinar
@@ -159,9 +180,13 @@ export class WebinarController {
     example: getAllRegistrationDoc,
   })
   async getRegistrations(@Param('id') id: string): Promise<IApiResponse<WebinarRegistrationDto[]>> {
-    const registrations = await this.webinarService.getRegistrations(id);
+    const { registrations, total } = await this.webinarService.getRegistrations(id);
 
-    return ResponseUtil.success(registrations, 'Registrations retrieved successfully');
+    return ResponseUtil.paginated({
+      data: registrations,
+      message: 'Registrations retrieved successfully',
+      total: total,
+    });
   }
 
   // [USER] Register for a webinar (if SCHEDULED and not full)
@@ -179,12 +204,11 @@ export class WebinarController {
   ): Promise<IApiResponse<WebinarRegistrationDto>> {
     const registration = await this.webinarService.registerUser(dto.webinarId, dto.userId);
 
-    return ResponseUtil.success(
-      registration,
-      'Registration successful',
-      undefined,
-      HttpStatus.CREATED,
-    );
+    return ResponseUtil.success({
+      data: registration,
+      message: 'Registration successful',
+      status: HttpStatus.CREATED,
+    });
   }
 
   // [USER] Cancel registration for a webinar (if SCHEDULED)
@@ -202,6 +226,50 @@ export class WebinarController {
   ): Promise<IApiResponse<WebinarRegistrationDto>> {
     const registration = await this.webinarService.unregisterUser(dto.webinarId, dto.userId);
 
-    return ResponseUtil.success(registration, 'Cancellation successful');
+    return ResponseUtil.success({
+      data: registration,
+      message: 'Cancellation successful',
+    });
+  }
+
+  // [USER] Get webinar supports (documents, links, etc.)
+  @Get(':id/supports')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get webinar supports' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of webinar supports',
+  })
+  async getWebinarSupports(@Param('id') id: string, @Req() request: Request) {
+    const { webinarSupports, total } = await this.webinarService.getWebinarSupports(id);
+
+    const baseUrl = generateBaseUrl(request);
+
+    return ResponseUtil.paginated({
+      data: webinarSupports,
+      message: 'Webinar supports retrieved successfully',
+      total: total,
+      page: 1,
+      limit: total,
+      baseUrl,
+    });
+  }
+
+  // [USER] Get webinar details by ID (including if user is registered)
+  @Get(':id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get webinar details by ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Webinar details retrieved successfully',
+    type: WebinarDto,
+  })
+  async getWebinarDetails(@Param('id') id: string) {
+    const webinar = await this.webinarService.findOne(id);
+
+    return ResponseUtil.success({
+      data: webinar,
+      message: 'Webinar details retrieved successfully',
+    });
   }
 }

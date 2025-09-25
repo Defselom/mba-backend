@@ -5,16 +5,22 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
+import { UserRole, UserStatus } from '@/../generated/prisma';
 import { LoggedInUser, RegisterDto } from '@/auth/dto';
-import { hashPassword } from '@/auth/utils';
+import { generateRandomPassword, hashPassword } from '@/auth/utils';
+import { EmailService } from '@/email/email.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import { PaginationDto } from '@/shared/dto';
+import { UploadService } from '@/upload/upload.service';
 import { GetAllUserDto, UpdateUserDto } from '@/user/dto';
-import { UserRole, UserStatus } from '@/../generated/prisma';
 
 @Injectable()
 export class UserService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private uploadService: UploadService,
+    private emailService: EmailService,
+  ) {}
 
   async create(dto: RegisterDto): Promise<LoggedInUser> {
     // 1. Check if user exists
@@ -29,7 +35,8 @@ export class UserService {
     }
 
     // 2. Hash password
-    const hashedPassword = dto.password ? await hashPassword(dto.password) : undefined;
+    const generatedPassword = generateRandomPassword(12);
+    const hashedPassword = await hashPassword(generatedPassword);
 
     // 3. Create UserAccount
     const user = await this.prisma.userAccount.create({
@@ -93,7 +100,21 @@ export class UserService {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password: _, ...result } = user;
 
-    return user;
+    const userImgUrl = await this.uploadService.getPresignedUrlFromPublicUrl(
+      user?.profileImage ?? '',
+    );
+
+    const userWithImgUrl = { ...result, profileImage: userImgUrl };
+
+    // send credentials email
+    await this.emailService.sendCredentialsEmail({
+      to: user.email,
+      email: user.email,
+      username: user.username,
+      password: generatedPassword,
+    });
+
+    return userWithImgUrl;
   }
 
   async findAll(paginationDto: PaginationDto): Promise<{ data: GetAllUserDto[]; total: number }> {
@@ -101,19 +122,24 @@ export class UserService {
 
     const [data, total] = await this.prisma.$transaction([
       this.prisma.userAccount.findMany({
+        where: { isDeleted: false },
         skip: (page - 1) * limit,
         take: limit,
         orderBy: { [sortBy]: sortOrder },
         omit: { password: true },
       }),
-      this.prisma.userAccount.count(),
+      this.prisma.userAccount.count({
+        where: { isDeleted: false },
+      }),
     ]);
 
     return { data: data as GetAllUserDto[], total };
   }
 
   async update(id: string, dto: UpdateUserDto): Promise<LoggedInUser> {
-    const user = await this.prisma.userAccount.findUnique({ where: { id } });
+    const user = await this.prisma.userAccount.findUnique({
+      where: { id, isDeleted: false },
+    });
 
     if (!user) {
       throw new NotFoundException('User not found');
@@ -131,10 +157,10 @@ export class UserService {
     return updatedUser;
   }
 
-  // delete user
+  // soft delete user
   async delete(id: string): Promise<void> {
     const user = await this.prisma.userAccount.findUnique({
-      where: { id },
+      where: { id, isDeleted: false },
       select: { role: true },
     });
 
@@ -142,22 +168,21 @@ export class UserService {
       throw new NotFoundException('User not found');
     }
 
-    await this.prisma.userAccount.delete({
+    // Effectuer un soft delete au lieu d'une suppression physique
+    await this.prisma.userAccount.update({
       where: { id },
-      include: {
-        adminProfile: true,
-        speakerProfile: true,
-        moderatorProfile: true,
-        collaboratorProfile: true,
-        participantProfile: true,
-        partnerProfile: true,
+      data: {
+        isDeleted: true,
+        deletedAt: new Date(),
       },
     });
   }
 
   // update user status
   async updateStatus(id: string, userStatus: UserStatus): Promise<void> {
-    const user = await this.prisma.userAccount.findUnique({ where: { id } });
+    const user = await this.prisma.userAccount.findUnique({
+      where: { id, isDeleted: false },
+    });
 
     if (!user) {
       throw new NotFoundException('User not found');
@@ -172,7 +197,9 @@ export class UserService {
   }
 
   async updateRole(id: string, userRole: UserRole): Promise<void> {
-    const user = await this.prisma.userAccount.findUnique({ where: { id } });
+    const user = await this.prisma.userAccount.findUnique({
+      where: { id, isDeleted: false },
+    });
 
     if (!user) {
       throw new NotFoundException('User not found');
@@ -188,8 +215,10 @@ export class UserService {
 
   async getUserRegistrations(userId: string) {
     const registrations = await this.prisma.registration.findMany({
-      where: { userId },
-      include: { webinar: true },
+      where: { userId, isDeleted: false },
+      include: {
+        webinar: true,
+      },
     });
 
     return registrations;

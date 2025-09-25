@@ -18,6 +18,7 @@ import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 import type { Request } from 'express';
 
+import { UserRole } from '@/../generated/prisma';
 import * as dto from '@/auth/dto';
 import { JwtGuard } from '@/auth/guard';
 import { RolesGuard } from '@/auth/guard';
@@ -37,16 +38,15 @@ import { updateUserRoleExample } from '@/user/doc/update-user-role.example';
 import { GetAllUserDto, UpdateUserDto, UpdateUserStatusDto } from '@/user/dto';
 import { UpdateUserRoleDto } from '@/user/dto/update-user-role.dto';
 import { UserService } from '@/user/user.service';
-import { UserRole } from '@/../generated/prisma';
 
 @Controller('users')
+@ApiBearerAuth()
 @UseGuards(JwtGuard, RolesGuard)
 export class UserController {
   constructor(private userService: UserService) {}
 
   @Get('me')
   @HttpCode(HttpStatus.OK)
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current user information' })
   @ApiResponse({ status: 200, description: 'Connected user', example: getUserMeExample })
   getMe(@GetUser('') user: dto.LoggedInUser): { user: dto.LoggedInUser } {
@@ -56,7 +56,6 @@ export class UserController {
   @Post('')
   @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.CREATED)
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Add a new user' })
   @ApiResponse({
     status: 201,
@@ -66,14 +65,16 @@ export class UserController {
   async addUser(@Body() dto: dto.RegisterDto): Promise<IApiResponse<dto.LoggedInUser>> {
     const user = await this.userService.create(dto);
 
-    return ResponseUtil.success(user, 'User created successfully');
+    return ResponseUtil.success({
+      data: user,
+      message: 'User created successfully',
+    });
   }
 
   @Get()
   @Roles(UserRole.ADMIN)
   @UseGuards(JwtGuard)
   @HttpCode(HttpStatus.OK)
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get all users' })
   @ApiResponse({
     status: 200,
@@ -92,14 +93,14 @@ export class UserController {
 
     console.log(paginationDto);
 
-    return ResponseUtil.paginated(
+    return ResponseUtil.paginated({
       data,
       total,
-      paginationDto.page || 1,
-      paginationDto.limit || 10,
-      'Users retrieved successfully',
+      page: paginationDto.page ?? 1,
+      limit: paginationDto.limit ?? 10,
+      message: 'Users retrieved successfully',
       baseUrl,
-    );
+    });
   }
 
   @Put(':id')
@@ -118,7 +119,10 @@ export class UserController {
   ): Promise<IApiResponse<dto.LoggedInUser>> {
     const updatedUser = await this.userService.update(id, dto);
 
-    return ResponseUtil.success(updatedUser, 'User updated successfully');
+    return ResponseUtil.success({
+      data: updatedUser,
+      message: 'User updated successfully',
+    });
   }
 
   @Patch(':id/role')
@@ -133,7 +137,10 @@ export class UserController {
   async updateRole(@Param('id') id: string, @Body() dto: UpdateUserRoleDto) {
     await this.userService.updateRole(id, dto.role);
 
-    return ResponseUtil.success(undefined, 'User role updated successfully');
+    return ResponseUtil.success({
+      data: undefined,
+      message: 'User role updated successfully',
+    });
   }
 
   @Patch(':id/status')
@@ -151,7 +158,10 @@ export class UserController {
   async updateStatus(@Param('id') id: string, @Body() dto: UpdateUserStatusDto) {
     await this.userService.updateStatus(id, dto.status);
 
-    return ResponseUtil.success(undefined, 'User status updated successfully');
+    return ResponseUtil.success({
+      data: undefined,
+      message: 'User status updated successfully',
+    });
   }
 
   @Delete(':id')
@@ -162,17 +172,22 @@ export class UserController {
   async deleteUser(@Param('id') id: string): Promise<IApiResponse<void>> {
     await this.userService.delete(id);
 
-    return ResponseUtil.success(undefined, 'User deleted successfully');
+    return ResponseUtil.success({
+      data: undefined,
+      message: 'User deleted successfully',
+    });
   }
 
   @Get(':id/registrations')
   @HttpCode(HttpStatus.OK)
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get user registrations' })
   @ApiResponse({ status: 200, description: 'User registrations retrieved successfully' })
   async getUserRegistrations(@Param('id') id: string): Promise<IApiResponse<any>> {
     const registrations = await this.userService.getUserRegistrations(id);
 
-    return ResponseUtil.success(registrations, 'User registrations retrieved successfully');
+    return ResponseUtil.success({
+      data: registrations,
+      message: 'User registrations retrieved successfully',
+    });
   }
 }

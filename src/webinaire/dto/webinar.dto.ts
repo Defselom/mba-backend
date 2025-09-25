@@ -25,8 +25,14 @@ export class WebinarDto {
   @ApiProperty()
   status: string;
 
+  @ApiProperty({ isArray: true, type: String })
+  tags: string[];
+
   @ApiProperty({ required: false })
   accessLink?: string;
+
+  @ApiProperty({ required: false })
+  totalSubscribers?: number;
 
   @ApiProperty({ required: false })
   animatedById?: string;

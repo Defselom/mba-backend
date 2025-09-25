@@ -7,9 +7,12 @@
   "license": "UNLICENSED",
   "scripts": {
     "prisma:dev:deploy": "prisma migrate deploy",
+    "prisma:seed": "ts-node prisma/seed.ts",
+    "prisma:seed:dev": "prisma db seed",
     "db:dev:rm": "docker compose rm dev-db -s -f -v",
     "db:dev:up": "docker compose up dev-db -d",
     "db:dev:restart": "pnpm db:dev:rm && pnpm db:dev:up && sleep 1 && pnpm prisma:dev:deploy",
+    "db:dev:reset": "pnpm db:dev:restart && pnpm prisma:seed",
     "prisma:test:deploy": "dotenv -e .env.test -- prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "prisma:test:studio": "dotenv -e .env.test -- prisma studio",
@@ -35,6 +38,8 @@
     "test:both": "jest --no-cache --config ./jest-both.json"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.888.0",
+    "@aws-sdk/s3-request-presigner": "^3.888.0",
     "@nestjs/cache-manager": "^3.0.1",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
@@ -48,7 +53,12 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
     "cookie-parser": "^1.4.7",
+    "form-data": "^4.0.4",
+    "handlebars": "^4.7.8",
     "helmet": "^8.1.0",
+    "mailgun.js": "^12.0.3",
+    "multer": "^2.0.2",
+    "multer-s3": "^3.0.1",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",
@@ -68,6 +78,7 @@
     "@types/cookie-parser": "^1.4.9",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
+    "@types/multer": "^2.0.0",
     "@types/node": "^22.10.7",
     "@types/passport-jwt": "^4.0.1",
     "@types/passport-local": "^1.0.38",
@@ -108,5 +119,8 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
+  },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
   }
 }

@@ -1,0 +1,63 @@
+<h1>{{#if isApproved}}✅ Compte approuvé{{else}}❌ Compte non approuvé{{/if}}</h1>
+
+<p>Bonjour {{userName}},</p>
+
+{{#if isApproved}}
+    <p>Nous avons le plaisir de vous informer que votre compte MBA a été <strong>approuvé</strong> ! 🎉</p>
+    
+    {{> alert type="success" title="🎊 Félicitations !" message="Votre compte est maintenant actif et vous pouvez accéder à toutes nos fonctionnalités."}}
+    
+    <h2>Vous pouvez maintenant :</h2>
+    <ul>
+        <li>🎓 Accéder à tous nos cours et formations</li>
+        <li>📹 Participer à nos webinaires exclusifs</li>
+        <li>👥 Rejoindre notre communauté d'entrepreneurs</li>
+        <li>💼 Utiliser nos outils business premium</li>
+        <li>🤝 Bénéficier de notre accompagnement personnalisé</li>
+    </ul>
+    
+    {{> button url="/dashboard" text="Accéder à mon compte"}}
+    
+    <p>Merci de nous faire confiance pour votre développement professionnel. Notre équipe est là pour vous accompagner dans votre réussite.</p>
+    
+{{else}}
+    <p>Nous regrettons de vous informer que votre demande de compte MBA n'a pas pu être approuvée à ce stade.</p>
+    
+    {{> alert type="warning" title="⚠️ Raison du refus" message=rejectionReason}}
+    
+    <h2>Que faire maintenant ?</h2>
+    <ul>
+        <li>📋 Vérifiez que toutes les informations fournies sont correctes</li>
+        <li>📄 Assurez-vous que tous les documents requis sont complets</li>
+        <li>🔄 Vous pouvez soumettre une nouvelle demande après correction</li>
+        <li>📞 Contactez notre support pour plus d'informations</li>
+    </ul>
+    
+    {{#if canReapply}}
+        {{> button url="/register" text="Soumettre une nouvelle demande"}}
+    {{/if}}
+    
+    {{> button url="/contact" text="Contacter le support" secondary=true}}
+    
+    <p>Nous vous encourageons à corriger les points mentionnés et à soumettre une nouvelle demande. Notre équipe reste disponible pour vous aider.</p>
+{{/if}}
+
+{{#if additionalNotes}}
+    {{> alert type="info" title="📝 Note complémentaire" message=additionalNotes}}
+{{/if}}
+
+{{#if isApproved}}
+    <h2>Prochaines étapes recommandées :</h2>
+    <ol>
+        <li>🔐 Connectez-vous à votre compte</li>
+        <li>📝 Complétez votre profil si nécessaire</li>
+        <li>🎯 Définissez vos objectifs business</li>
+        <li>📚 Explorez nos formations</li>
+        <li>📅 Planifiez votre première session de coaching</li>
+    </ol>
+{{/if}}
+
+<p>{{#if isApproved}}Bienvenue officiellement dans la famille MBA !{{else}}Nous espérons vous compter bientôt parmi nous.{{/if}}</p>
+
+<p><strong>L'équipe MBA</strong><br>
+<em>{{#if isApproved}}Votre succès, notre mission{{else}}Nous restons à votre disposition{{/if}}</em></p>
