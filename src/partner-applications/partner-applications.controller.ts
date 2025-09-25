@@ -1,13 +1,16 @@
 // src/partner-application/partner-application.controller.ts
-import { Body, Controller, Get, HttpStatus, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpStatus, Param, Patch, Post, Query, Req } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+
+import type { Request } from 'express';
 
 import { CreatePartnerApplicationDto } from './dto/create-partner-application.dto';
 import { ReviewPartnerApplicationDto } from './dto/review-partner-application.dto';
 import { PartnerApplicationsService } from './partner-applications.service';
 import type { LoggedInUser } from '@/auth/dto'; // ton type user actuel
 import { GetUser } from '@/decorator/get-user.decorator'; // ton décorateur existant
-import { ResponseUtil } from '@/shared/utils';
+import { PaginationDto } from '@/shared/dto';
+import { generateBaseUrl, ResponseUtil } from '@/shared/utils';
 
 @ApiTags('partner-applications')
 @ApiBearerAuth()
@@ -24,12 +27,11 @@ export class PartnerApplicationsController {
   async create(@Body() dto: CreatePartnerApplicationDto) {
     const application = await this.service.create(dto);
 
-    return ResponseUtil.success(
-      application,
-      'Application submitted successfully',
-      undefined,
-      HttpStatus.CREATED,
-    );
+    return ResponseUtil.success({
+      data: application,
+      message: 'Application submitted successfully',
+      status: HttpStatus.CREATED,
+    });
   }
 
   @Get()
@@ -38,15 +40,22 @@ export class PartnerApplicationsController {
     description: 'Allows an admin to list all partner applications.',
   })
   @ApiResponse({ status: 200, description: 'List of partner applications retrieved successfully.' })
-  async list() {
-    const applications = await this.service.findMany();
+  async list(@Query() query: PaginationDto, @Req() request: Request) {
+    const result = await this.service.findMany({
+      page: query.page,
+      limit: query.limit,
+    });
 
-    return ResponseUtil.success(
-      applications,
-      'Partner applications retrieved successfully',
-      undefined,
-      HttpStatus.OK,
-    );
+    const baseUrl = generateBaseUrl(request);
+
+    return ResponseUtil.paginated({
+      data: result.data,
+      total: result.total,
+      page: query.page ?? 1,
+      limit: query.limit ?? 10,
+      message: 'Partner applications retrieved successfully',
+      baseUrl,
+    });
   }
 
   @Get(':id')
@@ -58,12 +67,10 @@ export class PartnerApplicationsController {
   async get(@Param('id') id: string) {
     const application = await this.service.findOne(id);
 
-    return ResponseUtil.success(
-      application,
-      'Partner application retrieved successfully',
-      undefined,
-      HttpStatus.OK,
-    );
+    return ResponseUtil.success({
+      data: application,
+      message: 'Partner application retrieved successfully',
+    });
   }
 
   // route admin (RolesGuard/role ADMIN)
@@ -80,11 +87,9 @@ export class PartnerApplicationsController {
   ) {
     const reviewedApplication = await this.service.review(id, body);
 
-    return ResponseUtil.success(
-      reviewedApplication,
-      'Partner application reviewed successfully',
-      undefined,
-      HttpStatus.OK,
-    );
+    return ResponseUtil.success({
+      data: reviewedApplication,
+      message: 'Partner application reviewed successfully',
+    });
   }
 }

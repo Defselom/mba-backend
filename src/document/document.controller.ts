@@ -7,9 +7,13 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
+
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+
+import type { Request } from 'express';
 
 import { DocumentService } from './document.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
@@ -19,7 +23,7 @@ import { UpdateDocumentDto } from './dto/update-document.dto';
 import { UserRole } from '@/../generated/prisma';
 import { JwtGuard, RolesGuard } from '@/auth/guard';
 import { Roles } from '@/decorator';
-import { ResponseUtil } from '@/shared/utils';
+import { generateBaseUrl, ResponseUtil } from '@/shared/utils';
 
 @ApiTags('Documents')
 @UseGuards(JwtGuard, RolesGuard)
@@ -54,10 +58,19 @@ export class DocumentController {
       timestamp: '2025-09-15T23:29:16.919Z',
     },
   })
-  async findAll(@Query() query: QueryDocumentDto) {
-    const data = await this.service.findAll(query);
+  async findAll(@Query() query: QueryDocumentDto, @Req() request: Request) {
+    const result = await this.service.findAll(query);
 
-    return ResponseUtil.success(data, 'Documents retrieved successfully');
+    const baseUrl = generateBaseUrl(request);
+
+    return ResponseUtil.paginated({
+      data: result.data,
+      total: result.total,
+      page: query.page ?? 1,
+      limit: query.limit ?? 10,
+      message: 'Documents retrieved successfully',
+      baseUrl,
+    });
   }
 
   @Get(':id')
@@ -71,7 +84,10 @@ export class DocumentController {
   async findOne(@Param('id') id: string) {
     const data = await this.service.findOne(id);
 
-    return ResponseUtil.success(data, 'Document retrieved successfully');
+    return ResponseUtil.success({
+      data,
+      message: 'Document retrieved successfully',
+    });
   }
 
   @Post()
@@ -85,7 +101,10 @@ export class DocumentController {
   async create(@Body() dto: CreateDocumentDto) {
     const document = await this.service.create(dto);
 
-    return ResponseUtil.success(document, 'Document created successfully');
+    return ResponseUtil.success({
+      data: document,
+      message: 'Document created successfully',
+    });
   }
 
   @Patch(':id')
@@ -99,7 +118,10 @@ export class DocumentController {
   async update(@Param('id') id: string, @Body() dto: UpdateDocumentDto) {
     const document = await this.service.update(id, dto);
 
-    return ResponseUtil.success(document, 'Document updated successfully');
+    return ResponseUtil.success({
+      data: document,
+      message: 'Document updated successfully',
+    });
   }
 
   @Delete(':id')
@@ -119,6 +141,9 @@ export class DocumentController {
   async remove(@Param('id') id: string) {
     await this.service.remove(id);
 
-    return ResponseUtil.success(null, 'Document deleted successfully');
+    return ResponseUtil.success({
+      data: null,
+      message: 'Document deleted successfully',
+    });
   }
 }

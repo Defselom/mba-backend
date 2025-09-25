@@ -50,8 +50,11 @@ export class DocumentService {
     ]);
 
     return {
-      items,
-      meta: { total, page, limit, pages: Math.ceil(total / limit) },
+      data: items,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
     };
   }
 

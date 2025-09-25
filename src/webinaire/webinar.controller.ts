@@ -118,16 +118,16 @@ export class WebinarController {
     example: getAllWebinarsDoc,
   })
   async findAll(@Query() pagination: PaginationDto, @Req() request: Request) {
-    const { data, total } = await this.webinarService.findAll(pagination);
+    const result = await this.webinarService.findAll(pagination);
 
     const baseUrl = generateBaseUrl(request);
 
     return ResponseUtil.paginated({
-      data,
+      data: result.data,
+      total: result.total,
+      page: pagination.page ?? 1,
+      limit: pagination.limit ?? 10,
       message: 'Webinars retrieved successfully',
-      total: total,
-      page: pagination.page,
-      limit: pagination.limit,
       baseUrl,
     });
   }

@@ -26,14 +26,33 @@ export class PartnerApplicationsService {
     });
   }
 
-  async findMany(params?: { status?: ApplicationStatus }) {
-    return this.prisma.partnerApplication.findMany({
-      where: {
-        status: params?.status,
-        isDeleted: false,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+  async findMany(params?: { status?: ApplicationStatus; page?: number; limit?: number }) {
+    const page = params?.page ?? 1;
+    const limit = params?.limit ?? 10;
+    const skip = (page - 1) * limit;
+
+    const where = {
+      status: params?.status,
+      isDeleted: false,
+    };
+
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.partnerApplication.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.partnerApplication.count({ where }),
+    ]);
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async findOne(id: string) {

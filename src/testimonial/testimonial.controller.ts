@@ -48,8 +48,8 @@ export class TestimonialController {
     const baseUrl = generateBaseUrl(request);
 
     return ResponseUtil.paginated({
-      data: result.items,
-      total: result.meta.total,
+      data: result.data,
+      total: result.total,
       page: query.page ?? 1,
       limit: query.limit ?? 10,
       message: 'Testimonials retrieved successfully',

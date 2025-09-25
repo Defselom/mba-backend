@@ -147,17 +147,31 @@ export class WebinarService {
   }
 
   // List & paginate all webinars (admin)
-  async findAll(pagination: { page?: number; limit?: number }) {
+  async findAll(pagination: {
+    page?: number;
+    limit?: number;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+  }) {
     const page = pagination.page || 1;
-    const limit = pagination.limit || 10;
+    const limit = Math.min(100, Math.max(1, pagination.limit || 10)); // Limit maximum à 100
     const skip = (page - 1) * limit;
+    const sortBy = pagination.sortBy || 'dateTime';
+    const sortOrder = pagination.sortOrder || 'desc';
+
+    // Validation du champ de tri
+    const validSortFields = ['dateTime', 'createdAt', 'updatedAt', 'title', 'status'] as const;
+
+    const finalSortBy = validSortFields.includes(sortBy as (typeof validSortFields)[number])
+      ? sortBy
+      : 'dateTime';
 
     const [data, total] = await Promise.all([
       this.prisma.webinar.findMany({
         where: { isDeleted: false },
         skip,
         take: limit,
-        orderBy: { dateTime: 'desc' },
+        orderBy: { [finalSortBy]: sortOrder },
         include: {
           animatedBy: true,
           moderatedBy: true,
@@ -180,11 +194,13 @@ export class WebinarService {
       }),
     );
 
-    console.log('Webinars with Subscriber Counts:');
-
-    console.log({ dataWithSubscribers, total });
-
-    return { data: dataWithSubscribers, total };
+    return {
+      data: dataWithSubscribers,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   // Assign actors: animatedBy, moderatedBy, collaborators

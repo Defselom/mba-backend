@@ -65,7 +65,10 @@ export class UserController {
   async addUser(@Body() dto: dto.RegisterDto): Promise<IApiResponse<dto.LoggedInUser>> {
     const user = await this.userService.create(dto);
 
-    return ResponseUtil.success(user, 'User created successfully');
+    return ResponseUtil.success({
+      data: user,
+      message: 'User created successfully',
+    });
   }
 
   @Get()
@@ -90,14 +93,14 @@ export class UserController {
 
     console.log(paginationDto);
 
-    return ResponseUtil.paginated(
+    return ResponseUtil.paginated({
       data,
       total,
-      paginationDto.page || 1,
-      paginationDto.limit || 10,
-      'Users retrieved successfully',
+      page: paginationDto.page ?? 1,
+      limit: paginationDto.limit ?? 10,
+      message: 'Users retrieved successfully',
       baseUrl,
-    );
+    });
   }
 
   @Put(':id')
@@ -116,7 +119,10 @@ export class UserController {
   ): Promise<IApiResponse<dto.LoggedInUser>> {
     const updatedUser = await this.userService.update(id, dto);
 
-    return ResponseUtil.success(updatedUser, 'User updated successfully');
+    return ResponseUtil.success({
+      data: updatedUser,
+      message: 'User updated successfully',
+    });
   }
 
   @Patch(':id/role')
@@ -131,7 +137,10 @@ export class UserController {
   async updateRole(@Param('id') id: string, @Body() dto: UpdateUserRoleDto) {
     await this.userService.updateRole(id, dto.role);
 
-    return ResponseUtil.success(undefined, 'User role updated successfully');
+    return ResponseUtil.success({
+      data: undefined,
+      message: 'User role updated successfully',
+    });
   }
 
   @Patch(':id/status')
@@ -149,7 +158,10 @@ export class UserController {
   async updateStatus(@Param('id') id: string, @Body() dto: UpdateUserStatusDto) {
     await this.userService.updateStatus(id, dto.status);
 
-    return ResponseUtil.success(undefined, 'User status updated successfully');
+    return ResponseUtil.success({
+      data: undefined,
+      message: 'User status updated successfully',
+    });
   }
 
   @Delete(':id')
@@ -160,7 +172,10 @@ export class UserController {
   async deleteUser(@Param('id') id: string): Promise<IApiResponse<void>> {
     await this.userService.delete(id);
 
-    return ResponseUtil.success(undefined, 'User deleted successfully');
+    return ResponseUtil.success({
+      data: undefined,
+      message: 'User deleted successfully',
+    });
   }
 
   @Get(':id/registrations')
@@ -170,6 +185,9 @@ export class UserController {
   async getUserRegistrations(@Param('id') id: string): Promise<IApiResponse<any>> {
     const registrations = await this.userService.getUserRegistrations(id);
 
-    return ResponseUtil.success(registrations, 'User registrations retrieved successfully');
+    return ResponseUtil.success({
+      data: registrations,
+      message: 'User registrations retrieved successfully',
+    });
   }
 }
