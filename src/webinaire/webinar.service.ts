@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 
-import { Prisma, RegistrationStatus, WebinarStatus } from '@/../generated/prisma';
+import { Prisma, RegistrationStatus, Support, WebinarStatus } from '@/../generated/prisma';
 import { PrismaService } from '@/prisma/prisma.service';
 import { AssignActorsDto, CreateWebinarDto, UpdateWebinarDto } from '@/webinaire/dto/index.dto';
 import { normalizeTags, slugify } from '@/webinaire/utils';
@@ -220,13 +220,21 @@ export class WebinarService {
   }
 
   // Get registrations for a webinar (with user info)
-  async getRegistrations(webinarId: string) {
-    return await this.prisma.registration.findMany({
-      where: { webinarId, isDeleted: false },
-      include: {
-        user: true, // Get UserAccount info for each registration
-      },
-    });
+  async getRegistrations(webinarId: string): Promise<{ registrations: any[]; total: number }> {
+    const [registrations, total] = await Promise.all([
+      this.prisma.registration.findMany({
+        where: { webinarId, isDeleted: false },
+        include: {
+          user: true, // Get UserAccount info for each registration
+        },
+      }),
+
+      this.prisma.registration.count({
+        where: { webinarId, isDeleted: false },
+      }),
+    ]);
+
+    return { registrations, total };
   }
 
   // Register a user for a webinar
@@ -307,18 +315,28 @@ export class WebinarService {
   }
 
   // Get webinar support files
-  async getWebinarSupports(webinarId: string) {
-    const webinar = await this.prisma.webinar.findUnique({
-      where: { id: webinarId, isDeleted: false },
-      include: {
-        supports: {
-          where: { isDeleted: false },
+  async getWebinarSupports(
+    webinarId: string,
+  ): Promise<{ webinarSupports: Support[]; total: number }> {
+    const [webinar, total] = await Promise.all([
+      this.prisma.webinar.findUnique({
+        where: { id: webinarId, isDeleted: false },
+        include: {
+          supports: {
+            where: { isDeleted: false },
+          },
         },
-      },
-    });
+      }),
+      this.prisma.webinar.count({
+        where: {
+          id: webinarId,
+          isDeleted: false,
+        },
+      }),
+    ]);
 
     if (!webinar) throw new NotFoundException('Webinar not found');
 
-    return webinar?.supports;
+    return { webinarSupports: webinar?.supports, total };
   }
 }

@@ -10,8 +10,11 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Req,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+
+import type { Request } from 'express';
 
 import { CreateTestimonialDto } from './dto/create-testimonial.dto';
 import { QueryTestimonialDto } from './dto/query-testimonial.dto';
@@ -23,7 +26,7 @@ import { JwtGuard } from '@/auth/guard';
 import { RolesGuard } from '@/auth/guard';
 import { Roles } from '@/decorator';
 import { GetUser } from '@/decorator/get-user.decorator';
-import { ResponseUtil } from '@/shared/utils';
+import { generateBaseUrl, ResponseUtil } from '@/shared/utils';
 
 @ApiTags('Testimonials')
 @ApiBearerAuth()
@@ -39,8 +42,10 @@ export class TestimonialController {
       ' this endpoint allows filtering by status for admin/moderator use cases.  for filter by author userId',
   })
   @ApiResponse({ status: 200, description: 'List of testimonials', type: CreateTestimonialDto })
-  async findAll(@Query() query: QueryTestimonialDto) {
+  async findAll(@Query() query: QueryTestimonialDto, @Req() request: Request) {
     const result = await this.service.findAll(query);
+
+    const baseUrl = generateBaseUrl(request);
 
     return ResponseUtil.paginated({
       data: result.items,
@@ -48,6 +53,7 @@ export class TestimonialController {
       page: query.page ?? 1,
       limit: query.limit ?? 10,
       message: 'Testimonials retrieved successfully',
+      baseUrl,
     });
   }
 

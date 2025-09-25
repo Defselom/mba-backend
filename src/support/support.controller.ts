@@ -23,7 +23,7 @@ import { JwtGuard, RolesGuard } from '@/auth/guard';
 import { GetUser, Roles } from '@/decorator';
 import type { ApiResponse as IApiResponse } from '@/shared/interfaces';
 import { generateBaseUrl, ResponseUtil } from '@/shared/utils';
-import { getAllSupportDoc } from '@/support/doc';
+import { createSupport, getAllSupportDoc } from '@/support/doc';
 import { CreateSupportDto, UpdateSupportDto, SupportQueryDto } from '@/support/dto';
 import { SupportService } from '@/support/support.service';
 
@@ -41,6 +41,7 @@ export class SupportController {
     status: 201,
     description: 'Support created successfully',
     type: CreateSupportDto,
+    example: createSupport,
   })
   async create(
     @Body() createSupportDto: CreateSupportDto,
@@ -48,7 +49,11 @@ export class SupportController {
   ): Promise<IApiResponse<any>> {
     const support = await this.supportService.create(createSupportDto, user);
 
-    return ResponseUtil.success(support, 'Support created successfully');
+    return ResponseUtil.success({
+      data: support,
+      message: 'Support created successfully',
+      status: HttpStatus.CREATED,
+    });
   }
 
   @Get()
@@ -68,14 +73,14 @@ export class SupportController {
 
     const baseUrl = generateBaseUrl(request);
 
-    return ResponseUtil.paginated(
-      result.data,
-      result.total,
-      result.page,
-      result.limit,
-      'Supports retrieved successfully',
+    return ResponseUtil.paginated({
+      data: result.data,
+      total: result.total,
+      page: query.page ?? 1,
+      limit: query.limit ?? 10,
+      message: 'Supports retrieved successfully',
       baseUrl,
-    );
+    });
   }
 
   @Get('statistics')
@@ -91,7 +96,10 @@ export class SupportController {
   async getStatistics(): Promise<IApiResponse<Record<SupportType, number>>> {
     const stats = await this.supportService.countByType();
 
-    return ResponseUtil.success(stats, 'Support statistics retrieved successfully');
+    return ResponseUtil.success({
+      data: stats,
+      message: 'Support statistics retrieved successfully',
+    });
   }
 
   @Get(':id')
@@ -105,7 +113,10 @@ export class SupportController {
   async findOne(@Param('id') id: string): Promise<IApiResponse<any>> {
     const support = await this.supportService.findOne(id);
 
-    return ResponseUtil.success(support, 'Support retrieved successfully');
+    return ResponseUtil.success({
+      data: support,
+      message: 'Support retrieved successfully',
+    });
   }
 
   @Patch(':id')
@@ -123,7 +134,10 @@ export class SupportController {
   ): Promise<IApiResponse<any>> {
     const support = await this.supportService.update(id, updateSupportDto);
 
-    return ResponseUtil.success(support, 'Support updated successfully');
+    return ResponseUtil.success({
+      data: support,
+      message: 'Support updated successfully',
+    });
   }
 
   @Delete(':id')
@@ -139,6 +153,9 @@ export class SupportController {
   async remove(@Param('id') id: string): Promise<IApiResponse<void>> {
     await this.supportService.delete(id);
 
-    return ResponseUtil.success(undefined, 'Support deleted successfully');
+    return ResponseUtil.success({
+      data: undefined,
+      message: 'Support deleted successfully',
+    });
   }
 }
