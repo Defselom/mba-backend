@@ -278,6 +278,7 @@ model Webinar {
   title       String
   description String
   dateTime    DateTime
+  thumbnail  String?
   duration    Int
   legalTopic  String
   maxCapacity Int

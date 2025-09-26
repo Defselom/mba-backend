@@ -1,5 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 
+import { IsUrl } from 'class-validator';
+
 export class WebinarDto {
   @ApiProperty()
   id: string;
@@ -24,6 +26,10 @@ export class WebinarDto {
 
   @ApiProperty()
   status: string;
+
+  @ApiProperty()
+  @IsUrl()
+  thumbnail: string;
 
   @ApiProperty({ isArray: true, type: String })
   tags: string[];

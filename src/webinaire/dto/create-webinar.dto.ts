@@ -67,6 +67,14 @@ export class CreateWebinarDto {
   maxCapacity: number;
 
   @ApiProperty({
+    example: 'https://example.com/thumbnail.jpg',
+    description: 'Thumbnail image URL',
+    required: true,
+  })
+  @IsUrl({}, { message: 'Thumbnail must be a valid URL' })
+  thumbnail: string;
+
+  @ApiProperty({
     example: WebinarStatus.SCHEDULED,
     enum: WebinarStatus,
     description: 'Status of the webinar',
