@@ -28,12 +28,12 @@ export class WebinarService {
       ...webinarData,
     };
 
-    // Gérer les tags si ils sont fournis
+    // Handle tags update if provided
     if (tags !== undefined) {
       if (tags.length > 0) {
         updateData.tags = {
-          set: [], // Déconnecter tous les tags existants
-          connectOrCreate: this.buildConnectOrCreate(tags), // Connecter/créer les nouveaux
+          set: [], // Disconnect all existing tags
+          connectOrCreate: this.buildConnectOrCreate(tags), // Connect/create the new ones
         };
       } else {
         updateData.tags = { set: [] };
