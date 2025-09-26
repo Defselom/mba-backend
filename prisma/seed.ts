@@ -119,13 +119,13 @@ async function cleanDatabase() {
 }
 
 async function seedUsers(): Promise<UserAccount[]> {
-  const hashedPassword = await bcrypt.hash('password123', 10);
+  const hashedPassword = await bcrypt.hash('StrongPass!2025', 10);
 
   const usersData = [
     // Admin
     {
       username: 'admin',
-      email: 'admin@mba.com',
+      email: 'defselom@sexample.com',
       password: hashedPassword,
       firstName: 'Admin',
       lastName: 'Main',
