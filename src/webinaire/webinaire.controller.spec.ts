@@ -1,7 +1,7 @@
 import { BadRequestException, HttpStatus, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 
-import { RegistrationStatus, WebinarStatus } from '@/../generated/prisma';
+import { RegistrationStatus, WebinarStatus } from '@/generated/prisma';
 import { JwtGuard, RolesGuard } from '@/auth/guard';
 import { ResponseUtil } from '@/shared/utils';
 import {

@@ -1,7 +1,7 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 
-import { RegistrationStatus, WebinarStatus } from '@/../generated/prisma';
+import { RegistrationStatus, WebinarStatus } from '@/generated/prisma';
 import { PrismaService } from '@/prisma/prisma.service';
 import { AssignActorsDto, CreateWebinarDto, UpdateWebinarDto } from '@/webinaire/dto/index.dto';
 import { WebinarService } from '@/webinaire/webinar.service';

@@ -3,7 +3,7 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { Validate, ValidateIf, ValidateNested } from 'class-validator';
 
-import { UserRole } from '@/../generated/prisma';
+import { UserRole } from '@/generated/prisma';
 import { RoleProfileRegisterConstraint } from '@/auth/validation';
 import {
   CreateModeratorProfileDto,

@@ -2,8 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { CreatePartnerApplicationDto } from './dto/create-partner-application.dto';
 import { ReviewPartnerApplicationDto } from './dto/review-partner-application.dto';
-import { ApplicationStatus } from '@/../generated/prisma';
-import { Prisma } from '@/../generated/prisma';
+import { ApplicationStatus } from '@/generated/prisma';
+import { Prisma } from '@/generated/prisma';
 import { PrismaService } from '@/prisma/prisma.service';
 import { PaginationDto } from '@/shared/dto';
 

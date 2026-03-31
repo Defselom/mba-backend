@@ -3,7 +3,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { QueryDocumentDto } from './dto/query-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
-import { Prisma, DocumentType } from '@/../generated/prisma';
+import { Prisma, DocumentType } from '@/generated/prisma';
 import { PrismaService } from '@/prisma/prisma.service';
 
 @Injectable()

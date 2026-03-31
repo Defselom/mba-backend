@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-import { SupportType } from '@/../generated/prisma';
+import { SupportType } from '@/generated/prisma';
 
 export class GetAllSupportDto {
   @ApiProperty({ example: 'uuid-123', description: 'Support ID' })

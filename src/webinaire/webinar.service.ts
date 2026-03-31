@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 
-import { Prisma, RegistrationStatus, Support, WebinarStatus } from '@/../generated/prisma';
+import { Prisma, RegistrationStatus, Support, WebinarStatus } from '@/generated/prisma';
 import { PrismaService } from '@/prisma/prisma.service';
 import { PaginationDto } from '@/shared/dto/pagination.dto';
 import { AssignActorsDto, CreateWebinarDto, UpdateWebinarDto } from '@/webinaire/dto/index.dto';

@@ -2,7 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 import { IsDateString, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
-import { DocumentType } from '@/../generated/prisma';
+import { DocumentType } from '@/generated/prisma';
 
 export class CreateDocumentDto {
   @ApiProperty({ description: 'Document title' })

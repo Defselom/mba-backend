@@ -2,7 +2,7 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 
 import { IsEnum, IsOptional, IsString } from 'class-validator';
 
-import { ModerationStatus } from '@/../generated/prisma';
+import { ModerationStatus } from '@/generated/prisma';
 import { PaginationDto } from '@/shared/dto';
 
 export class QueryTestimonialDto extends PaginationDto {

@@ -7,7 +7,7 @@ import {
 
 import { CreateTestimonialDto } from './dto/create-testimonial.dto';
 import { UpdateTestimonialDto } from './dto/update-testimonial.dto';
-import { ModerationStatus, Prisma, Testimonial } from '@/../generated/prisma';
+import { ModerationStatus, Prisma, Testimonial } from '@/generated/prisma';
 import { PrismaService } from '@/prisma/prisma.service';
 import { QueryTestimonialDto } from '@/testimonial/dto';
 

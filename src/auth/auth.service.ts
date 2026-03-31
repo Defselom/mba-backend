@@ -9,7 +9,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JsonWebTokenError, JwtService, NotBeforeError, TokenExpiredError } from '@nestjs/jwt';
 
-import { UserRole, UserStatus } from '@/../generated/prisma';
+import { UserRole, UserStatus } from '@/generated/prisma';
 import { PasswordResetTokenExpiration, TokenExpiration } from '@/auth/constants';
 import { JwtPayload, LoginDto } from '@/auth/dto';
 import { RegisterDto } from '@/auth/dto/register.dto';

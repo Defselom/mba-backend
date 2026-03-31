@@ -20,7 +20,7 @@ import { CreateDocumentDto } from './dto/create-document.dto';
 import { QueryDocumentDto } from './dto/query-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
 
-import { UserRole } from '@/../generated/prisma';
+import { UserRole } from '@/generated/prisma';
 import { JwtGuard, RolesGuard } from '@/auth/guard';
 import { Roles } from '@/decorator';
 import { generateBaseUrl, ResponseUtil } from '@/shared/utils';

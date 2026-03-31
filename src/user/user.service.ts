@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-import { UserRole, UserStatus } from '@/../generated/prisma';
+import { UserRole, UserStatus } from '@/generated/prisma';
 import { LoggedInUser, RegisterDto } from '@/auth/dto';
 import { generateRandomPassword, hashPassword } from '@/auth/utils';
 import { EmailService } from '@/email/email.service';

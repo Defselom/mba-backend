@@ -11,7 +11,7 @@ import {
   IsIn,
 } from 'class-validator';
 
-import { UserRole } from '@/../generated/prisma';
+import { UserRole } from '@/generated/prisma';
 import { getRawUrl, isPresignedUrl } from '@/upload/utils';
 
 export class CreateUserAccountDto {

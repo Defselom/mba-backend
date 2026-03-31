@@ -3,8 +3,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 
 import * as pactum from 'pactum';
 
-import { RegistrationStatus, UserRole, UserStatus, WebinarStatus } from '@/../generated/prisma';
 import { AppModule } from '@/app.module';
+import { RegistrationStatus, UserRole, UserStatus, WebinarStatus } from '@/generated/prisma';
 import { PrismaService } from '@/prisma/prisma.service';
 
 describe('Webinar (e2e)', () => {

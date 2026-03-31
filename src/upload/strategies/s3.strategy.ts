@@ -14,7 +14,7 @@ export interface MulterFile {
   size: number;
 }
 
-export class MinioStrategy {
+export class S3Strategy {
   private s3: S3Client;
   private bucket: string;
   private endpoint: string;

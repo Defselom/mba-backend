@@ -1,7 +1,7 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 
-import { UserRole } from '@/../generated/prisma';
+import { UserRole } from '@/generated/prisma';
 import { LoggedInUser } from '@/auth/dto';
 
 export const ROLES_KEY = 'role';

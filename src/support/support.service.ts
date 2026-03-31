@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 
-import { SupportType, Prisma } from '@/../generated/prisma';
+import { SupportType, Prisma } from '@/generated/prisma';
 import { LoggedInUser } from '@/auth/dto';
 import { PrismaService } from '@/prisma/prisma.service';
 import { CreateSupportDto, UpdateSupportDto, SupportQueryDto } from '@/support/dto';

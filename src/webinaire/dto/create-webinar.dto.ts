@@ -18,7 +18,7 @@ import {
   IsEnum,
 } from 'class-validator';
 
-import { WebinarStatus } from 'generated/prisma';
+import { WebinarStatus } from '@/generated/prisma';
 
 export const toTagArray = (input: unknown): string[] => {
   if (Array.isArray(input)) return input.map(String);

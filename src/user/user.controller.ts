@@ -18,7 +18,7 @@ import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 import type { Request } from 'express';
 
-import { UserRole } from '@/../generated/prisma';
+import { UserRole } from '@/generated/prisma';
 import * as dto from '@/auth/dto';
 import { JwtGuard } from '@/auth/guard';
 import { RolesGuard } from '@/auth/guard';

@@ -1,1 +1,1 @@
-export * from './minio.strategy';
+export * from './s3.strategy';

@@ -13,8 +13,8 @@ import {
 import { UploadFileDto } from './dto/upload-file.dto';
 import { UploadService } from './upload.service';
 import { JwtGuard } from '@/auth/guard';
-import type { MulterFile } from '@/upload/strategies/minio.strategy';
 import { getUploadFolder } from '@/upload/utils';
+import type { MulterFile } from '@/upload/strategies/index.strategy';
 
 @ApiTags('upload')
 @Controller('upload')

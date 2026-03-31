@@ -17,7 +17,7 @@ import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagg
 
 import type { Request } from 'express';
 
-import { UserRole, SupportType } from '@/../generated/prisma';
+import { UserRole, SupportType } from '@/generated/prisma';
 import type { LoggedInUser } from '@/auth/dto';
 import { JwtGuard, RolesGuard } from '@/auth/guard';
 import { GetUser, Roles } from '@/decorator';

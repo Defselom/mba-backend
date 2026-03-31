@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 import { IsEnum, IsNotEmpty, IsString } from 'class-validator';
 
-import { SupportType } from '@/../generated/prisma';
+import { SupportType } from '@/generated/prisma';
 
 export class CreateSupportDto {
   @ApiProperty({ example: 'Support Document Title' })

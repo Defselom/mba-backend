@@ -21,7 +21,7 @@ import { QueryTestimonialDto } from './dto/query-testimonial.dto';
 import { UpdateTestimonialDto } from './dto/update-testimonial.dto';
 import { TestimonialService } from './testimonial.service';
 
-import { UserRole } from '@/../generated/prisma';
+import { UserRole } from '@/generated/prisma';
 import { JwtGuard } from '@/auth/guard';
 import { RolesGuard } from '@/auth/guard';
 import { Roles } from '@/decorator';

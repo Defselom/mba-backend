@@ -2,7 +2,7 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 
 import { IsEnum, IsOptional, IsDateString } from 'class-validator';
 
-import { SupportType } from '@/../generated/prisma';
+import { SupportType } from '@/generated/prisma';
 import { PaginationDto } from '@/shared/dto';
 
 export class SupportQueryDto extends PaginationDto {

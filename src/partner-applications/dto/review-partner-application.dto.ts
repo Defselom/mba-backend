@@ -3,7 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 import { IsEnum, IsString } from 'class-validator';
 
-import { ApplicationStatus } from '@/../generated/prisma';
+import { ApplicationStatus } from '@/generated/prisma';
 
 export class ReviewPartnerApplicationDto {
   @ApiProperty({ enum: ApplicationStatus, example: ApplicationStatus.ACCEPTED })
