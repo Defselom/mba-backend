@@ -6,7 +6,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 
 import { JwtPayload, LoggedInUser } from '@/auth/dto';
 import { PrismaService } from '@/prisma/prisma.service';
-import { UserStatus } from 'generated/prisma';
+import { UserStatus } from '@/../generated/prisma';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
@@ -30,8 +30,6 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
-
-    console.log(user);
 
     // check is user is active
     if (user.status !== UserStatus.ACTIVE) {
