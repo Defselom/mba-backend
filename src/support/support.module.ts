@@ -2,11 +2,11 @@ import { Module } from '@nestjs/common';
 
 import { SupportController } from './support.controller';
 import { SupportService } from './support.service';
-import { PrismaService } from '@/prisma/prisma.service';
-import { UploadService } from '@/upload/upload.service';
+import { UploadModule } from '@/upload/upload.module';
 
 @Module({
+  imports: [UploadModule],
   controllers: [SupportController],
-  providers: [SupportService, PrismaService, UploadService],
+  providers: [SupportService],
 })
 export class SupportModule {}
