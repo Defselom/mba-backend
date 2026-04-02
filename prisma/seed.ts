@@ -22,9 +22,10 @@ import {
   PersonalizedSupport,
   PartnerApplication,
 } from '../src/generated/prisma/index.js';
+import { normalizePostgresConnectionString } from '../src/prisma/normalize-connection-string';
 
 const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: normalizePostgresConnectionString(process.env.DATABASE_URL),
 });
 
 const prisma = new PrismaClient({

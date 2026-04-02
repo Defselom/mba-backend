@@ -98,8 +98,8 @@ pnpm install
 
 ```env
 # Database
-DATABASE_URL="postgresql://appuser:apppass@localhost:5432/appdb"
-TEST_DATABASE_URL="postgresql://testuser:testpass@localhost:55432/testdb"
+DATABASE_URL="postgresql://appuser:apppass@localhost:5432/appdb?sslmode=verify-full"
+TEST_DATABASE_URL="postgresql://testuser:testpass@localhost:55432/testdb?sslmode=verify-full"
 
 # App Configuration
 PORT=3000
